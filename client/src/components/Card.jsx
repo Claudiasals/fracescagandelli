@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Trash } from "phosphor-react";
+import { menuLabel } from "../utils/menuLabel.js";
 
 /**
  * @param {object} props
@@ -130,7 +131,7 @@ const Card = ({
       </div>
 
       <div className="card-heading-slot">
-        <h3 className="card-title">{category.title}</h3>
+        <h3 className="card-title">{menuLabel(title)}</h3>
       </div>
     </div>
   );

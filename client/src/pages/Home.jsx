@@ -379,10 +379,10 @@ const Home = () => {
 
   return (
     <>
-      <section className="mx-auto mb-16 w-full max-w-[1920px] px-[4vw] py-[4vw]">
+      <section className="home-categories-section relative mx-auto mb-16 w-full max-w-[1920px] px-[4vw] py-[4vw] md:px-[2.5vw] md:pb-[2.5vw] md:pt-5">
         <div className="flex flex-col gap-[25px]">
           {isAdmin && (
-            <div className="flex w-full flex-wrap items-center justify-between gap-[25px]">
+            <div className="home-admin-toolbar flex w-full flex-wrap items-center justify-between gap-[25px] md:absolute md:right-[2.5vw] md:top-5 md:z-10 md:max-w-[calc(100%-2.5vw)] md:justify-end md:gap-3">
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
@@ -426,7 +426,7 @@ const Home = () => {
           )}
         </div>
 
-        <div className="mt-[25px] grid grid-cols-1 items-start gap-x-[25px] gap-y-[25px] sm:grid-cols-2 lg:grid-cols-3">
+        <div className="home-categories-grid mt-[25px] grid grid-cols-1 items-start gap-x-[25px] gap-y-[25px] sm:grid-cols-2 md:mt-0 md:grid-cols-2 lg:grid-cols-2">
           {showForm && (
             <div className="card flex h-full min-w-0 flex-col transition-opacity duration-200 ease-in-out">
               <label className="flex aspect-[4/5] w-full shrink-0 cursor-pointer items-center justify-center overflow-hidden bg-[var(--color-beige-light)]">

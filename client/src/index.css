@@ -25,8 +25,19 @@ body::-webkit-scrollbar {
 
 :root {
   --site-nav-height: 3.25rem;
+  /* mobile: min-h riga header + py-3 del nav */
+  --site-mobile-header-offset: calc(var(--site-nav-height) + 1.5rem);
   --site-nav-text-size: clamp(0.88rem, 2.2vw, 1.25rem);
   --btn-radius: 0.5rem;
+  --font-size-ui: 11px;
+  --font-size-prose: 0.75rem;
+  --font-size-prose-md: 0.875rem;
+  --font-size-card-title: 10px;
+  --font-weight-card-title: 400;
+  --font-size-page-title-max: 1.28rem;
+  --font-size-modal-title: 0.875rem;
+  --font-size-contact-submit: 0.75rem;
+  --font-size-nav-menu: 10px;
 }
 
 @media (min-width: 640px) {
@@ -101,7 +112,8 @@ h4 {
 }
 
 /* Titolo header: Cormorant SC */
-.site-nav .site-brand-link {
+.site-nav .site-brand-link,
+.site-layout-sidebar .site-brand-link {
   font-family: var(--font-brand);
   font-weight: 400;
   font-style: normal;
@@ -113,28 +125,50 @@ h4 {
 }
 
 .site-nav .site-brand-link,
-.site-nav h1.site-brand-title {
+.site-nav h1.site-brand-title,
+.site-layout-sidebar .site-brand-link,
+.site-layout-sidebar h1.site-brand-title {
   font-size: clamp(1.02rem, 4.8vw, 1.2rem);
   line-height: 1.08;
 }
 
-.site-nav h1.site-brand-title {
+.site-nav h1.site-brand-title,
+.site-layout-sidebar h1.site-brand-title {
   margin: 0;
   font: inherit;
   color: var(--color-black);
 }
 
-/* Desktop: titolo header e voci menu stessa altezza tipografica */
+/* Desktop: titolo sidebar affianco alle card */
 @media (min-width: 768px) {
-  .site-nav .site-brand-link,
-  .site-nav h1.site-brand-title {
+  .site-layout-sidebar.site-nav--sidebar .site-brand-link,
+  .site-layout-sidebar.site-nav--sidebar h1.site-brand-title {
+    font-family: var(--font-brand);
     font-size: var(--site-nav-text-size);
+    line-height: 1.08;
   }
 
-  .site-nav .site-brand-link,
-  .site-nav .btn-navbar {
+  .site-layout-sidebar.site-nav--sidebar .site-brand-link {
     letter-spacing: 0.1em;
-    padding: 0.15rem 0;
+    padding: 0;
+  }
+
+  /* Spaziatura sidebar: sotto titolo, sopra voci menu, attorno al divisore */
+  .site-layout-sidebar .site-layout-sidebar-title {
+    padding-bottom: 20px;
+  }
+
+  .site-layout-sidebar .site-desktop-menu-nav {
+    padding-top: 10px;
+    margin-top: 0;
+  }
+
+  .site-layout-sidebar .site-desktop-categories-nav > hr.mobile-menu-separator {
+    display: block;
+    width: min(100%, 5.5rem);
+    margin: 10px 0;
+    border: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -152,5 +186,56 @@ h2.page-title {
 
 input,
 textarea {
+  text-transform: none;
+}
+
+/* Desktop: testi più leggibili (mobile invariato) */
+@media (min-width: 768px) {
+  :root {
+    --site-nav-text-size: clamp(1.125rem, 2.5vw, 1.65rem);
+    --font-size-ui: 14px;
+    --font-size-prose: 1rem;
+    --font-size-prose-md: 1.125rem;
+    --font-size-card-title: 1rem;
+    --font-weight-card-title: 700;
+    --font-size-page-title-max: 1.625rem;
+    --font-size-modal-title: 1.0625rem;
+    --font-size-contact-submit: 0.9375rem;
+    --font-size-nav-menu: 0.75rem;
+  }
+
+  body {
+    font-size: 1.125rem;
+  }
+
+  .text-sm {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .text-\[11px\] {
+    font-size: var(--font-size-ui);
+  }
+}
+
+.site-nav .site-desktop-menu-nav .btn-navbar,
+.site-layout-sidebar .site-desktop-menu-nav .btn-navbar,
+.site-nav .site-desktop-categories-nav .btn-navbar {
+  font-family: var(--font-menu);
+  font-size: var(--font-size-nav-menu);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  font-optical-sizing: auto;
+}
+
+.site-mobile-menu .mobile-menu-nav .btn-navbar,
+.site-mobile-menu .btn-navbar.mobile-menu-item {
+  font-family: var(--font-prose);
+  font-size: var(--font-size-nav-menu);
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
   text-transform: none;
 }
