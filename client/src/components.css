@@ -257,7 +257,7 @@
 
   @media (max-width: 767px) {
     .site-nav .site-brand-link {
-      min-height: 1.35rem;
+      min-height: 1.55rem;
     }
 
     .site-nav .menu-toggle-btn {
@@ -383,6 +383,7 @@
 
   .site-footer a {
     font-family: inherit;
+    text-decoration-color: color-mix(in srgb, var(--color-black) 22%, transparent);
   }
 
   .admin-toolbar-text-link {
@@ -410,13 +411,46 @@
     color: var(--color-black);
   }
 
+  .admin-toolbar-hint {
+    margin: 0;
+    max-width: min(100%, 20rem);
+    text-align: left;
+    font-family: var(--font-prose);
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.35;
+    letter-spacing: 0.03em;
+    text-transform: lowercase;
+    color: color-mix(in srgb, var(--color-black) 52%, transparent);
+  }
+
   .site-footer-legal-link {
     text-decoration-thickness: 1px;
     text-underline-offset: 0.2em;
+    text-decoration-color: color-mix(in srgb, var(--color-black) 22%, transparent);
   }
 
   .site-footer-legal-link:hover {
     text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, var(--color-black) 35%, transparent);
+  }
+
+  .contact-detail-link {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, var(--color-black) 22%, transparent);
+    transition:
+      opacity 160ms ease,
+      text-decoration-color 200ms ease;
+  }
+
+  .contact-detail-link:hover,
+  .contact-detail-link:active {
+    opacity: 0.55;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, var(--color-black) 35%, transparent);
   }
 
   .site-brand-title {
@@ -426,7 +460,8 @@
   .page-title {
     margin: 0;
     color: var(--color-black);
-    font-size: clamp(0.95rem, 2.2vw, 1.125rem);
+    font-family: var(--font-page-title);
+    font-size: clamp(1.05rem, 2.5vw, 1.28rem);
   }
 
   a.btn-edit-gallery {
@@ -524,6 +559,21 @@
     color: var(--color-white);
   }
 
+  .modal-panel {
+    border-radius: var(--btn-radius);
+  }
+
+  .modal-panel .modal-title {
+    margin: 0;
+    color: var(--color-black);
+    font-family: var(--font-prose);
+    font-size: 0.875rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    line-height: 1.625;
+    text-transform: none;
+  }
+
   .btn-modal-action,
   .btn-danger-action {
     display: inline-flex;
@@ -564,12 +614,18 @@
   .btn-delete-category,
   .btn-cancel-icon.btn-delete-category,
   .btn-delete-photo,
-  .btn-cancel-icon.btn-delete-photo,
-  .btn-danger-action {
+  .btn-cancel-icon.btn-delete-photo {
     border-color: #9b1c1c;
     background: var(--color-white);
     color: #9b1c1c;
     box-shadow: 0 1px 0 rgba(155, 28, 28, 0.14);
+  }
+
+  .btn-danger-action {
+    border-color: #c41e1e;
+    background: #c41e1e;
+    color: var(--color-white);
+    box-shadow: 0 1px 0 rgba(196, 30, 30, 0.28);
   }
 
   .btn-delete-category:hover,
@@ -579,11 +635,16 @@
   .btn-delete-photo:hover,
   .btn-delete-photo:active,
   .btn-cancel-icon.btn-delete-photo:hover,
-  .btn-cancel-icon.btn-delete-photo:active,
-  .btn-danger-action:hover,
-  .btn-danger-action:active {
+  .btn-cancel-icon.btn-delete-photo:active {
     border-color: #9b1c1c;
     background: #9b1c1c;
+    color: var(--color-white);
+  }
+
+  .btn-danger-action:hover,
+  .btn-danger-action:active {
+    border-color: #a81818;
+    background: #a81818;
     color: var(--color-white);
   }
 
@@ -805,6 +866,23 @@
     padding-top: 0.25rem;
   }
 
+  .gallery-page .gallery-admin-toolbar {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .gallery-admin-toolbar__back {
+    --gallery-toolbar-aside-shift: calc((var(--site-nav-height) - 1.9rem) * 0.48);
+    margin-top: calc(-1 * var(--gallery-toolbar-aside-shift));
+    padding-top: calc(var(--gallery-toolbar-aside-shift) + 0.35rem);
+    padding-bottom: 0.45rem;
+    text-align: right;
+  }
+
+  .gallery-admin-toolbar__actions {
+    align-items: center;
+  }
+
   @media (min-width: 768px) {
     .admin-action-label {
       display: inline;
@@ -883,11 +961,16 @@
     .btn-delete-category,
     .btn-cancel-icon.btn-delete-category,
     .btn-delete-photo,
-    .btn-cancel-icon.btn-delete-photo,
-    .btn-danger-action {
+    .btn-cancel-icon.btn-delete-photo {
       border-color: #9b1c1c;
       background: var(--color-white);
       color: #9b1c1c;
+    }
+
+    .btn-danger-action {
+      border-color: #c41e1e;
+      background: #c41e1e;
+      color: var(--color-white);
     }
 
     .btn-delete-category:hover,
@@ -897,11 +980,16 @@
     .btn-delete-photo:hover,
     .btn-delete-photo:active,
     .btn-cancel-icon.btn-delete-photo:hover,
-    .btn-cancel-icon.btn-delete-photo:active,
-    .btn-danger-action:hover,
-    .btn-danger-action:active {
+    .btn-cancel-icon.btn-delete-photo:active {
       border-color: #9b1c1c;
       background: #9b1c1c;
+      color: var(--color-white);
+    }
+
+    .btn-danger-action:hover,
+    .btn-danger-action:active {
+      border-color: #a81818;
+      background: #a81818;
       color: var(--color-white);
     }
 

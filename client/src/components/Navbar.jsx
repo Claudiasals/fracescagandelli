@@ -58,6 +58,11 @@ const Navbar = () => {
                 </Link>
 
                 <div className="hidden items-center gap-5 md:flex lg:gap-6">
+                    {isAdmin && (
+                        <Link to="/settings" className="btn-navbar whitespace-nowrap">
+                            Impostazioni
+                        </Link>
+                    )}
                     <Link to="/" className="btn-navbar whitespace-nowrap">
                         Photography
                     </Link>
@@ -138,10 +143,20 @@ const Navbar = () => {
                         className="site-mobile-menu fixed inset-0 z-[70] flex flex-col items-end overflow-y-auto bg-white pb-8 pl-[4vw] pr-[4vw] pt-[calc(var(--site-nav-height)+0.5rem)] md:hidden"
                     >
                         <nav className="mobile-menu-nav flex w-full flex-col items-end">
+                            {isAdmin && (
+                                <Link
+                                    to="/settings"
+                                    className="btn-navbar mobile-menu-item block w-max max-w-full py-2 pr-2 text-right"
+                                    style={{ "--menu-item-delay": "70ms" }}
+                                    onClick={closeMenu}
+                                >
+                                    Impostazioni
+                                </Link>
+                            )}
                             <Link
                                 to="/"
                                 className="btn-navbar mobile-menu-item block w-max max-w-full py-2 pr-2 text-right"
-                                style={{ "--menu-item-delay": "70ms" }}
+                                style={{ "--menu-item-delay": isAdmin ? "140ms" : "70ms" }}
                                 onClick={closeMenu}
                             >
                                 Photography
@@ -149,7 +164,7 @@ const Navbar = () => {
                             <Link
                                 to="/about"
                                 className="btn-navbar mobile-menu-item block w-max max-w-full py-2 pr-2 text-right"
-                                style={{ "--menu-item-delay": "140ms" }}
+                                style={{ "--menu-item-delay": isAdmin ? "210ms" : "140ms" }}
                                 onClick={closeMenu}
                             >
                                 Chi&nbsp;sono
@@ -157,7 +172,7 @@ const Navbar = () => {
                             <Link
                                 to="/contact"
                                 className="btn-navbar mobile-menu-item block w-max max-w-full py-2 pr-2 text-right"
-                                style={{ "--menu-item-delay": "210ms" }}
+                                style={{ "--menu-item-delay": isAdmin ? "280ms" : "210ms" }}
                                 onClick={closeMenu}
                             >
                                 Contatti
@@ -171,7 +186,7 @@ const Navbar = () => {
                                             to={cat.link}
                                             className="btn-navbar mobile-menu-item block w-max max-w-full py-2 pr-2 text-right"
                                             style={{
-                                                "--menu-item-delay": `${280 + index * 70}ms`,
+                                                "--menu-item-delay": `${(isAdmin ? 350 : 280) + index * 70}ms`,
                                             }}
                                             onClick={closeMenu}
                                         >

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Pencil, Check, X, ArrowLeft } from "phosphor-react";
+import { Pencil, Check, X } from "phosphor-react";
+import { AdminToolbarAside } from "./AdminToolbarBackLink.jsx";
 import EditablePageText from "./EditablePageText.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
@@ -119,70 +119,64 @@ const LegalDocumentPage = ({ title, field, mailtoEmail = false }) => {
 
   return (
     <section className="mx-auto w-full max-w-4xl space-y-4 px-[4vw] py-10 md:py-14">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <h1 className="page-title min-w-0 flex-1">
-          {title}
-        </h1>
+      {isAdmin && (
+        <div className="mb-[25px] flex justify-end">
+          <AdminToolbarAside
+            backLabel="torna alle categorie"
+            backTitle="Torna alle categorie"
+            onBackClick={(e) => {
+              if (editing && dirty && !window.confirm("Hai modifiche non salvate. Tornare alle categorie?")) {
+                e.preventDefault();
+              }
+            }}
+          >
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {editing && (
+                <>
+                  <button
+                    type="button"
+                    className="btn-cancel-icon btn-annulla-action"
+                    onClick={cancelEdit}
+                    title="Annulla"
+                    aria-label="Annulla"
+                  >
+                    <span className="admin-action-icon">
+                      <X size={18} weight="bold" aria-hidden />
+                    </span>
+                    <span className="admin-action-label">annulla</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-confirm-icon"
+                    onClick={handleSave}
+                    disabled={!dirty}
+                    title="Salva le modifiche"
+                  >
+                    <span className="admin-action-icon">
+                      <Check size={22} weight="bold" />
+                    </span>
+                    <span className="admin-action-label">salva</span>
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                className={`btn-edit-gallery ${editing ? "btn-edit-gallery-active" : ""}`}
+                onClick={toggleEdit}
+                title={editing ? "Chiudi" : "Modifica testo"}
+              >
+                <span className="admin-action-icon">
+                  <Pencil size={22} weight="duotone" />
+                </span>
+                <span className="admin-action-label">modifica testo</span>
+              </button>
+            </div>
+          </AdminToolbarAside>
+        </div>
+      )}
 
-        {isAdmin && (
-          <div className="flex shrink-0 flex-nowrap items-center justify-end gap-4 self-start p-2">
-            <Link
-              to="/settings"
-              className="btn-edit-gallery shrink-0"
-              title="Torna alle impostazioni"
-              aria-label="Torna alle impostazioni"
-              onClick={(e) => {
-                if (editing && dirty && !window.confirm("Hai modifiche non salvate. Tornare alle impostazioni?")) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <span className="admin-action-icon">
-                <ArrowLeft size={22} weight="duotone" />
-              </span>
-              <span className="admin-action-label">indietro</span>
-            </Link>
-            {editing && (
-              <>
-                <button
-                  type="button"
-                  className="btn-cancel-icon btn-annulla-action"
-                  onClick={cancelEdit}
-                  title="Annulla"
-                  aria-label="Annulla"
-                >
-                  <span className="admin-action-icon">
-                    <X size={18} weight="bold" aria-hidden />
-                  </span>
-                  <span className="admin-action-label">annulla</span>
-                </button>
-                <button
-                  type="button"
-                  className="btn-confirm-icon"
-                  onClick={handleSave}
-                  disabled={!dirty}
-                  title="Salva le modifiche"
-                >
-                  <span className="admin-action-icon">
-                    <Check size={22} weight="bold" />
-                  </span>
-                  <span className="admin-action-label">salva</span>
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              className={`btn-edit-gallery ${editing ? "btn-edit-gallery-active" : ""}`}
-              onClick={toggleEdit}
-              title={editing ? "Chiudi" : "Modifica testo"}
-            >
-              <span className="admin-action-icon">
-                <Pencil size={22} weight="duotone" />
-              </span>
-              <span className="admin-action-label">modifica testo</span>
-            </button>
-          </div>
-        )}
+      <div className="mb-8">
+        <h1 className="page-title">{title}</h1>
       </div>
 
       {loading ? (

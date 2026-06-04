@@ -8,6 +8,8 @@ const categorySchema = new mongoose.Schema(
     slug: { type: String, required: true, unique: true },
     link: { type: String, required: true },
     order: { type: Number, default: 0 },
+    /** Categorie temporanee per demo video — rimuovibili con npm run remove-demo-categories */
+    isDemo: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

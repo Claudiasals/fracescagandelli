@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
-import { Pencil, ArrowsClockwise, Plus, Trash, Check, X } from "phosphor-react";
+import { useLocation, useParams } from "react-router-dom";
+import AdminToolbarBackLink from "../components/AdminToolbarBackLink.jsx";
+import { Pencil, ArrowsClockwise, Plus, Trash, X } from "phosphor-react";
 import { lockBodyScroll, unlockBodyScroll } from "../utils/bodyScrollLock.js";
 import EditablePageText from "../components/EditablePageText.jsx";
 
@@ -34,6 +35,8 @@ const GalleryPage = () => {
   const [pendingFile, setPendingFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const uploadFileInputRef = useRef(null);
+  const lastSavedDescriptionRef = useRef("");
+  const descriptionSaveTimerRef = useRef(null);
 
   const dragIndexRef = useRef(null);
   /** Feedback durante il riordino: cella sotto il cursore e foto trascinata. */
@@ -50,8 +53,13 @@ const GalleryPage = () => {
       const res = await fetch(`${API}/${encodeURIComponent(slug)}`);
       const data = await res.json();
       if (Array.isArray(data.photos)) setPhotos(data.photos);
-      if (typeof data.description === "string") setDescription(data.description);
-      else setDescription("");
+      if (typeof data.description === "string") {
+        setDescription(data.description);
+        lastSavedDescriptionRef.current = data.description;
+      } else {
+        setDescription("");
+        lastSavedDescriptionRef.current = "";
+      }
     } catch (err) {
       console.error("Errore caricamento galleria:", err);
     } finally {
@@ -59,31 +67,51 @@ const GalleryPage = () => {
     }
   }, [slug]);
 
-  const saveDescription = async () => {
-    try {
-      const res = await fetch(`${API}/${encodeURIComponent(slug)}/description`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token()}`,
-        },
-        body: JSON.stringify({ description }),
-      });
-      if (res.status === 401) {
-        alert("Sessione scaduta, rieffettua il login");
-        return;
+  const saveDescription = useCallback(
+    async (nextText) => {
+      const value = (nextText ?? description).trim();
+      if (value === lastSavedDescriptionRef.current) return;
+
+      try {
+        const res = await fetch(`${API}/${encodeURIComponent(slug)}/description`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token()}`,
+          },
+          body: JSON.stringify({ description: value }),
+        });
+        if (res.status === 401) {
+          alert("Sessione scaduta, rieffettua il login");
+          return;
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        const saved =
+          typeof data.description === "string" ? data.description.trim() : value;
+        setDescription(saved);
+        lastSavedDescriptionRef.current = saved;
+      } catch (err) {
+        console.error(err);
       }
-      if (!res.ok) return;
-      const data = await res.json();
-      if (typeof data.description === "string") setDescription(data.description);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    },
+    [description, slug]
+  );
 
   useEffect(() => {
     loadGallery();
   }, [loadGallery]);
+
+  useEffect(() => {
+    if (!editMode) return undefined;
+
+    clearTimeout(descriptionSaveTimerRef.current);
+    descriptionSaveTimerRef.current = setTimeout(() => {
+      saveDescription(description);
+    }, 700);
+
+    return () => clearTimeout(descriptionSaveTimerRef.current);
+  }, [description, editMode, saveDescription]);
 
   /** Ripulisce il feedback visuale quando si esce dal riordino. */
   useEffect(() => {
@@ -250,18 +278,21 @@ const GalleryPage = () => {
   };
 
   const toggleReorderMode = () => {
+    if (!reorderMode) {
+      setEditMode(false);
+    } else {
+      setDragOverIndex(null);
+      setDraggingIndex(null);
+      dragIndexRef.current = null;
+    }
     setReorderMode((r) => !r);
-    setEditMode(false);
   };
 
-  /** Chiude la modalità riordino: il tasto frecce torna verde chiaro come gli altri (l’ordine è già salvato a ogni spostamento). */
-  const finishReorderMode = () => {
-    setReorderMode(false);
-    setDragOverIndex(null);
-    setDraggingIndex(null);
-  };
-
-  const toggleEditMode = () => {
+  const toggleEditMode = async () => {
+    if (editMode) {
+      clearTimeout(descriptionSaveTimerRef.current);
+      await saveDescription(description);
+    }
     setEditMode((e) => !e);
     setReorderMode(false);
   };
@@ -363,7 +394,7 @@ const GalleryPage = () => {
         >
           <button
             type="button"
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-[var(--btn-radius)] border-2 border-white bg-black/40 text-white transition-colors hover:bg-black/60"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-[var(--btn-radius)] border-0 bg-transparent text-white transition-opacity hover:opacity-70"
             onClick={(e) => {
               e.stopPropagation();
               setLightbox(null);
@@ -407,12 +438,12 @@ const GalleryPage = () => {
           onClick={closeUploadModal}
         >
           <div
-            className="w-full max-w-md space-y-4 border border-black/15 bg-white p-6 shadow-none"
+            className="modal-panel w-full max-w-md space-y-4 border border-black/15 bg-white p-6 shadow-none"
             onClick={(e) => e.stopPropagation()}
           >
             <h2
               id="upload-dialog-title"
-              className="page-title"
+              className="modal-title"
             >
               Nuova foto
             </h2>
@@ -445,19 +476,16 @@ const GalleryPage = () => {
       )}
 
       {isAdmin && (
-          <div className="mb-[25px] flex flex-wrap items-center justify-between gap-[25px]">
+        <div className="gallery-admin-toolbar mb-[25px] w-full min-w-0">
+          <div className="gallery-admin-toolbar__back flex justify-end">
+            <AdminToolbarBackLink backLabel="torna alle categorie" backTitle="Torna alle categorie" />
+          </div>
+          <div className="gallery-admin-toolbar__actions flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <button type="button" className="btn-edit-gallery" onClick={openFilePicker} title="Aggiungi foto">
-                <span className="admin-action-icon">
-                  <Plus size={24} weight="duotone" />
-                </span>
-                <span className="admin-action-label">aggiungi foto</span>
-              </button>
-
               <button
                 type="button"
                 className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
-                onClick={toggleEditMode}
+                onClick={() => toggleEditMode()}
                 title="Modifica"
               >
                 <span className="admin-action-icon">
@@ -479,55 +507,14 @@ const GalleryPage = () => {
               </button>
             </div>
 
-            <div className="ml-auto flex shrink-0 flex-col items-end gap-0.5">
-              {(editMode || reorderMode) && (
-                <div className="flex flex-wrap items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    className="btn-cancel-icon btn-annulla-action"
-                    onClick={() => {
-                      const wasEditing = editMode;
-                      setEditMode(false);
-                      setReorderMode(false);
-                      if (wasEditing) loadGallery();
-                    }}
-                    title="Annulla"
-                    aria-label="Annulla"
-                  >
-                    <span className="admin-action-icon">
-                      <X size={18} weight="bold" aria-hidden />
-                    </span>
-                    <span className="admin-action-label">annulla</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn-confirm-icon"
-                    onClick={async () => {
-                      if (reorderMode) finishReorderMode();
-                      else if (editMode) {
-                        await saveDescription();
-                        setEditMode(false);
-                      } else setEditMode(false);
-                    }}
-                    title="Salva"
-                  >
-                    <span className="admin-action-icon">
-                      <Check size={22} weight="bold" />
-                    </span>
-                    <span className="admin-action-label">salva</span>
-                  </button>
-                </div>
-              )}
-              <Link
-                to="/"
-                className="admin-toolbar-text-link"
-                title="Torna alle categorie"
-              >
-                torna alle categorie
-              </Link>
-            </div>
+            <button type="button" className="btn-edit-gallery shrink-0" onClick={openFilePicker} title="Aggiungi foto">
+              <span className="admin-action-icon">
+                <Plus size={24} weight="duotone" />
+              </span>
+              <span className="admin-action-label">aggiungi foto</span>
+            </button>
           </div>
+        </div>
       )}
 
       {loading ? (
@@ -561,6 +548,7 @@ const GalleryPage = () => {
                 <EditablePageText
                   value={description}
                   onChange={setDescription}
+                  onBlur={() => saveDescription(description)}
                   autoFocus={false}
                   className={galleryIntroClass}
                   aria-label="Racconto fotografico della galleria"

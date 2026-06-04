@@ -38,8 +38,8 @@ body::-webkit-scrollbar {
 @theme {
   --font-sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
   --font-prose: "TeX Gyre Heros", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-page-title: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --font-brand: "Bodoni Moda", "Times New Roman", Times, serif;
+  --font-page-title: "Cormorant SC", "Times New Roman", Times, serif;
+  --font-brand: "Cormorant SC", "Times New Roman", Times, serif;
   --font-display: "Bodoni Moda", "Times New Roman", Times, serif;
   --font-menu: "Bodoni Moda", "Times New Roman", Times, serif;
   --font-weight-normal: 200;
@@ -100,7 +100,7 @@ h4 {
   text-transform: uppercase;
 }
 
-/* Titolo header: Bodoni Moda */
+/* Titolo header: Cormorant SC */
 .site-nav .site-brand-link {
   font-family: var(--font-brand);
   font-weight: 400;
@@ -112,19 +112,27 @@ h4 {
   -webkit-font-smoothing: antialiased;
 }
 
+.site-nav .site-brand-link,
+.site-nav h1.site-brand-title {
+  font-size: clamp(1.02rem, 4.8vw, 1.2rem);
+  line-height: 1.08;
+}
+
 .site-nav h1.site-brand-title {
   margin: 0;
   font: inherit;
-  font-size: var(--site-nav-text-size);
-  line-height: 1.08;
   color: var(--color-black);
 }
 
-/* Desktop: voci menu stessa grandezza del titolo header */
+/* Desktop: titolo header e voci menu stessa altezza tipografica */
 @media (min-width: 768px) {
-  .site-nav .btn-navbar {
+  .site-nav .site-brand-link,
+  .site-nav h1.site-brand-title {
     font-size: var(--site-nav-text-size);
-    line-height: 1.08;
+  }
+
+  .site-nav .site-brand-link,
+  .site-nav .btn-navbar {
     letter-spacing: 0.1em;
     padding: 0.15rem 0;
   }
@@ -132,11 +140,14 @@ h4 {
 
 h1.page-title,
 h2.page-title {
-  font-family: var(--font-prose);
+  font-family: var(--font-page-title);
   font-weight: 400;
-  letter-spacing: 0.03em;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+  letter-spacing: 0.06em;
   line-height: 1.2;
   text-transform: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 input,

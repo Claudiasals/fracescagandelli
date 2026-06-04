@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { AdminToolbarAside } from "../components/AdminToolbarBackLink.jsx";
 import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 import { API_BASE } from "../config/api.js";
@@ -12,14 +13,6 @@ const inputClass =
 const labelClass = "flex flex-col gap-2 text-[11px] font-normal lowercase tracking-[0.03em] text-black";
 
 const panelClass = "border-t border-black/15 pt-6";
-
-const contentLinks = [
-  { to: "/", label: "homepage e categorie" },
-  { to: "/family", label: "family" },
-  { to: "/portrait", label: "portrait" },
-  { to: "/personal-branding", label: "personal branding" },
-  { to: "/storytelling", label: "storytelling" },
-];
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -116,16 +109,16 @@ const Settings = () => {
 
   return (
     <section className="mx-auto w-full max-w-5xl px-[4vw] py-10 md:py-14">
-      <div className="mb-12">
-        <p className="mb-2 text-[11px] lowercase tracking-[0.03em] text-black/55">dashboard</p>
-        <h1 className="page-title">
-          Impostazioni
-        </h1>
+      <div className="mb-12 flex flex-wrap items-start justify-between gap-[25px]">
+        <div>
+          <h1 className="page-title">Impostazioni</h1>
+        </div>
+        <AdminToolbarAside backLabel="torna alle categorie" backTitle="Torna alle categorie" />
       </div>
 
-      <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.72fr)]">
-        <div className="space-y-12">
-          <form onSubmit={handleChangePassword} className={`${panelClass} space-y-5`}>
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-2 md:gap-x-10 lg:gap-x-14">
+          <form onSubmit={handleChangePassword} className={`${panelClass} min-w-0 space-y-5 md:border-t-0 md:pt-0`}>
             <h2 className="text-[11px] font-normal uppercase tracking-[0.08em] text-black">
               Password amministratore
             </h2>
@@ -167,7 +160,7 @@ const Settings = () => {
             </div>
           </form>
 
-          <form onSubmit={handleSaveContact} className={`${panelClass} space-y-5`}>
+          <form onSubmit={handleSaveContact} className={`${panelClass} min-w-0 space-y-5 md:border-t-0 md:pt-0`}>
             <h2 className="text-[11px] font-normal uppercase tracking-[0.08em] text-black">
               Contatti sul sito
             </h2>
@@ -204,63 +197,11 @@ const Settings = () => {
             )}
             <div className="flex justify-center">
               <button type="submit" className="btn-primary btn-primary-toolbar">
-                salva
+                aggiorna contatti
               </button>
             </div>
           </form>
         </div>
-
-        <aside className="space-y-12">
-          <div className={panelClass}>
-            <h2 className="mb-5 text-[11px] font-normal uppercase tracking-[0.08em] text-black">
-              Contenuti
-            </h2>
-            <ul className="list-none space-y-3 pl-0">
-              {contentLinks.map((item) => (
-                <li key={item.to}>
-                  <Link
-                    to={item.to}
-                    className="inline-flex border-b border-transparent text-[11px] lowercase tracking-[0.03em] text-black transition-[border-color,opacity] hover:border-black hover:opacity-70"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className={panelClass}>
-            <h2 className="mb-5 text-[11px] font-normal uppercase tracking-[0.08em] text-black">
-              Pagine legali
-            </h2>
-            <ul className="list-none space-y-3 pl-0">
-              <li>
-                <Link
-                  to="/privacy-policy"
-                  className="inline-flex border-b border-transparent text-[11px] lowercase tracking-[0.03em] text-black transition-[border-color,opacity] hover:border-black hover:opacity-70"
-                >
-                  privacy policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/cookie-policy"
-                  className="inline-flex border-b border-transparent text-[11px] lowercase tracking-[0.03em] text-black transition-[border-color,opacity] hover:border-black hover:opacity-70"
-                >
-                  cookie policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/terms-of-service"
-                  className="inline-flex border-b border-transparent text-[11px] lowercase tracking-[0.03em] text-black transition-[border-color,opacity] hover:border-black hover:opacity-70"
-                >
-                  termini di servizio
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </aside>
       </div>
     </section>
   );

@@ -55,6 +55,28 @@ const SEED = [
   },
 ];
 
+/** Categorie temporanee per video demo (immagini in client/public/demo-categories). */
+const DEMO_CATEGORIES = [
+  {
+    title: "Mani che tendono l'arco",
+    description: "",
+    slug: "demo-mani-che-tendono-l-arco",
+    imageUrl: "/demo-categories/demo-arco.png",
+  },
+  {
+    title: "Il rosso del raccolto",
+    description: "",
+    slug: "demo-il-rosso-del-raccolto",
+    imageUrl: "/demo-categories/demo-raccolto.png",
+  },
+  {
+    title: "Sulla linea del mare",
+    description: "",
+    slug: "demo-sulla-linea-del-mare",
+    imageUrl: "/demo-categories/demo-mare.png",
+  },
+];
+
 async function ensureSeed() {
   const count = await Category.countDocuments();
   if (count === 0) {
@@ -62,9 +84,30 @@ async function ensureSeed() {
   }
 }
 
+async function ensureDemoCategories() {
+  const maxOrderDoc = await Category.findOne().sort({ order: -1 }).select("order").lean();
+  let nextOrder = maxOrderDoc ? maxOrderDoc.order + 1 : 0;
+
+  for (const demo of DEMO_CATEGORIES) {
+    const exists = await Category.findOne({ slug: demo.slug }).lean();
+    if (exists) continue;
+
+    await Category.create({
+      title: demo.title,
+      description: demo.description,
+      imageUrl: demo.imageUrl,
+      slug: demo.slug,
+      link: linkForSlug(demo.slug),
+      order: nextOrder++,
+      isDemo: true,
+    });
+  }
+}
+
 export const getCategoriesController = async (req, res) => {
   try {
     await ensureSeed();
+    await ensureDemoCategories();
     const categories = await Category.find().sort({ order: 1 }).lean();
     res.status(200).json({ categories });
   } catch (error) {

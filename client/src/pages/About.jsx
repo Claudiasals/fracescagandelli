@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Check, X } from "phosphor-react";
-import EditablePageText from "../components/EditablePageText.jsx";
+import { AdminToolbarHintRow } from "../components/AdminToolbarBackLink.jsx";
+import AdminClickToEditText from "../components/AdminClickToEditText.jsx";
 import aboutFallbackImage from "../assets/images/about-portrait.jpg";
 
 import { API_BASE } from "../config/api.js";
@@ -14,8 +15,6 @@ const About = () => {
 
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState("");
 
   const [aboutImages, setAboutImages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -40,7 +39,7 @@ const About = () => {
 
   const token = () => localStorage.getItem("adminToken");
 
-  const handleSaveText = async () => {
+  const saveText = async (nextText) => {
     try {
       const res = await fetch(`${API}/about/text`, {
         method: "PUT",
@@ -48,21 +47,22 @@ const About = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token()}`,
         },
-        body: JSON.stringify({ text: editText }),
+        body: JSON.stringify({ text: nextText }),
       });
       if (res.status === 401) {
         alert("Sessione scaduta, rieffettua il login");
-        return;
+        return false;
       }
       if (!res.ok) {
         console.error("Errore salvataggio testo");
-        return;
+        return false;
       }
       const data = await res.json();
       setText(data.text);
-      setEditing(false);
+      return true;
     } catch (err) {
       console.error(err);
+      return false;
     }
   };
 
@@ -108,75 +108,14 @@ const About = () => {
     }
   };
 
-  const cancelEdit = () => {
-    if (editText !== text) {
-      if (!window.confirm("Annullare le modifiche non salvate?")) return;
-    }
-    setEditing(false);
-  };
-
-  const toggleEdit = () => {
-    if (!editing) {
-      setEditText(text);
-      setEditing(true);
-      return;
-    }
-    if (editText === text) {
-      setEditing(false);
-      return;
-    }
-    if (window.confirm("Annullare le modifiche non salvate?")) {
-      setEditing(false);
-    }
-  };
-
-  const textDirty = editing && editText !== text;
   const displayedImage = imagePreview || aboutImages.at(-1) || aboutFallbackImage;
 
   return (
     <section className="about-section mx-auto w-full max-w-5xl space-y-10 px-[4vw] py-10 md:py-14">
       {isAdmin && (
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
-            {editing && (
-              <>
-                <button
-                  type="button"
-                  className="btn-cancel-icon btn-annulla-action"
-                  onClick={cancelEdit}
-                  title="Annulla"
-                  aria-label="Annulla"
-                >
-                  <span className="admin-action-icon">
-                    <X size={18} weight="bold" aria-hidden />
-                  </span>
-                  <span className="admin-action-label">annulla</span>
-                </button>
-                <button
-                  type="button"
-                  className="btn-confirm-icon"
-                  onClick={handleSaveText}
-                  disabled={!textDirty}
-                  title="Salva le modifiche"
-                >
-                  <span className="admin-action-icon">
-                    <Check size={22} weight="bold" />
-                  </span>
-                  <span className="admin-action-label">salva</span>
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              className={`btn-edit-gallery ${editing ? "btn-edit-gallery-active" : ""}`}
-              onClick={toggleEdit}
-              title={editing ? "Chiudi" : "Modifica testo"}
-            >
-              <span className="admin-action-icon">
-                <Pencil size={22} weight="duotone" />
-              </span>
-              <span className="admin-action-label">modifica testo</span>
-            </button>
-          </div>
+        <div className="mb-[25px] w-full">
+          <AdminToolbarHintRow />
+        </div>
       )}
 
       <div className="grid gap-10 md:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] md:items-start">
@@ -210,11 +149,11 @@ const About = () => {
                   </button>
                 </>
               )}
-              <label className="btn-edit-gallery" title="Modifica foto Chi Sono">
+              <label className="btn-edit-gallery" title="Cambia foto Chi sono">
                 <span className="admin-action-icon">
                   <Pencil size={22} weight="duotone" />
                 </span>
-                <span className="admin-action-label">modifica</span>
+                <span className="admin-action-label">cambia foto</span>
                 <input
                   type="file"
                   className="hidden"
@@ -234,17 +173,14 @@ const About = () => {
 
         {loading ? (
           <div className="h-40 animate-pulse bg-[var(--color-beige-light)]" />
-        ) : isAdmin && editing ? (
-          <div className="w-full space-y-4">
-            <EditablePageText
-              value={editText}
-              onChange={setEditText}
-              className={aboutTextClassName}
-              aria-label="Testo Chi sono"
-            />
-          </div>
         ) : (
-          <p className={aboutTextClassName}>{text}</p>
+          <AdminClickToEditText
+            isAdmin={isAdmin}
+            text={text}
+            className={aboutTextClassName}
+            onSave={saveText}
+            ariaLabel="Testo Chi sono"
+          />
         )}
       </div>
     </section>

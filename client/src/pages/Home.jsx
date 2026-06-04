@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useState, useEffect, useRef } from "react";
 import Card from "../components/Card";
-import { Pencil, ArrowsClockwise, Plus, Check, X, Wrench } from "phosphor-react";
+import { Pencil, ArrowsClockwise, Plus, X } from "phosphor-react";
 
 import { API_BASE } from "../config/api.js";
 
@@ -28,6 +27,9 @@ const Home = () => {
   const dragIndexRef = useRef(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const saveTimersRef = useRef({});
+  const savingIdsRef = useRef(new Set());
+  const creatingCategoryRef = useRef(false);
 
   const revokeEditPreviews = (edits) => {
     Object.values(edits).forEach((d) => {
@@ -38,12 +40,6 @@ const Home = () => {
   const isCategoryDirty = (cat, d) => {
     if (!d) return false;
     return d.title !== cat.title || d.imageFile != null;
-  };
-
-  const hasPendingWork = () => {
-    const dirtyCat = categories.some((c) => isCategoryDirty(c, categoryEdits[c._id]));
-    const partialCreate = showForm && (categoryTitle || categoryImage || categoryImagePreview);
-    return dirtyCat || partialCreate;
   };
 
   const token = () => localStorage.getItem("adminToken");
@@ -119,34 +115,30 @@ const Home = () => {
     setReorderMode(false);
   };
 
-  const saveAllChanges = async () => {
-    for (const cat of categories) {
-      const d = categoryEdits[cat._id];
-      if (!d || !isCategoryDirty(cat, d)) continue;
-      if (!d.title?.trim()) {
-        alert("Il titolo e' obbligatorio per ogni categoria modificata.");
-        return;
-      }
+  const refreshCategories = async () => {
+    const resList = await fetch(`${API}/categories`);
+    const dataList = await resList.json();
+    if (Array.isArray(dataList.categories)) {
+      setCategories([...dataList.categories].sort((a, b) => a.order - b.order));
     }
+  };
 
-    const createTentativo = showForm && (categoryTitle || categoryImage);
-    if (createTentativo) {
-      if (!categoryTitle || !categoryImage) {
-        alert(
-          "Inserisci titolo e immagine della nuova categoria oppure usa la X rossa per chiudere il blocco nuova categoria."
-        );
-        return;
-      }
-    }
+  const saveCategoryDraft = useCallback(
+    async (id) => {
+      if (savingIdsRef.current.has(id)) return;
 
-    try {
-      for (const cat of categories) {
-        const d = categoryEdits[cat._id];
-        if (!d || !isCategoryDirty(cat, d)) continue;
+      const cat = categories.find((c) => c._id === id);
+      const d = categoryEdits[id];
+      if (!cat || !d || !isCategoryDirty(cat, d)) return;
+      if (!d.title?.trim()) return;
+
+      savingIdsRef.current.add(id);
+      try {
         const formData = new FormData();
         formData.append("title", d.title.trim());
         if (d.imageFile) formData.append("image", d.imageFile);
-        const res = await fetch(`${API}/categories/${cat._id}`, {
+
+        const res = await fetch(`${API}/categories/${id}`, {
           method: "PUT",
           headers: { Authorization: `Bearer ${token()}` },
           body: formData,
@@ -155,48 +147,115 @@ const Home = () => {
           alert("Sessione scaduta, rieffettua il login");
           return;
         }
-        const errData = !res.ok ? await res.json().catch(() => ({})) : null;
+        const updated = res.ok ? await res.json().catch(() => null) : null;
         if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
           alert(errData?.message || "Errore aggiornamento categoria");
           return;
         }
-      }
 
-      if (showForm && categoryTitle && categoryImage) {
-        const formData = new FormData();
-        formData.append("title", categoryTitle);
-        formData.append("image", categoryImage);
-        const res = await fetch(`${API}/categories/create`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token()}` },
-          body: formData,
+        setCategories((prev) =>
+          prev.map((c) =>
+            c._id === id
+              ? {
+                  ...c,
+                  title: updated?.title ?? d.title.trim(),
+                  imageUrl: updated?.imageUrl ?? c.imageUrl,
+                }
+              : c
+          )
+        );
+        setCategoryEdits((prev) => {
+          const next = { ...prev };
+          const draft = next[id];
+          if (draft?.localPreview) URL.revokeObjectURL(draft.localPreview);
+          delete next[id];
+          return next;
         });
-        if (res.status === 401) {
-          alert("Sessione scaduta, rieffettua il login");
-          return;
-        }
-        const data = await res.json();
-        if (!res.ok) {
-          alert(data.message || "Errore creazione categoria");
-          return;
-        }
+      } catch (err) {
+        console.error(err);
+        alert("Errore durante il salvataggio");
+      } finally {
+        savingIdsRef.current.delete(id);
+      }
+    },
+    [categories, categoryEdits]
+  );
+
+  const createCategoryFromForm = useCallback(async () => {
+    if (!showForm || !categoryTitle.trim() || !categoryImage || creatingCategoryRef.current) return;
+
+    creatingCategoryRef.current = true;
+    try {
+      const formData = new FormData();
+      formData.append("title", categoryTitle.trim());
+      formData.append("image", categoryImage);
+
+      const res = await fetch(`${API}/categories/create`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      if (res.status === 401) {
+        alert("Sessione scaduta, rieffettua il login");
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "Errore creazione categoria");
+        return;
       }
 
-      revokeEditPreviews(categoryEdits);
-      setCategoryEdits({});
       resetForm();
       setShowForm(false);
-      setEditMode(false);
-
-      const resList = await fetch(`${API}/categories`);
-      const dataList = await resList.json();
-      if (Array.isArray(dataList.categories))
-        setCategories([...dataList.categories].sort((a, b) => a.order - b.order));
+      await refreshCategories();
     } catch (err) {
       console.error(err);
-      alert("Errore durante il salvataggio");
+      alert("Errore creazione categoria");
+    } finally {
+      creatingCategoryRef.current = false;
     }
-  };
+  }, [showForm, categoryTitle, categoryImage]);
+
+  const flushPendingEdits = useCallback(async () => {
+    const ids = categories
+      .filter((c) => isCategoryDirty(c, categoryEdits[c._id]))
+      .map((c) => c._id);
+    for (const id of ids) {
+      await saveCategoryDraft(id);
+    }
+  }, [categories, categoryEdits, saveCategoryDraft]);
+
+  useEffect(() => {
+    if (!editMode) return undefined;
+
+    Object.entries(categoryEdits).forEach(([id, d]) => {
+      const cat = categories.find((c) => c._id === id);
+      if (!cat || !d || !isCategoryDirty(cat, d)) return;
+
+      if (d.imageFile) {
+        saveCategoryDraft(id);
+        return;
+      }
+
+      clearTimeout(saveTimersRef.current[id]);
+      saveTimersRef.current[id] = setTimeout(() => saveCategoryDraft(id), 700);
+    });
+
+    return () => {
+      Object.values(saveTimersRef.current).forEach(clearTimeout);
+    };
+  }, [categoryEdits, editMode, categories, saveCategoryDraft]);
+
+  useEffect(() => {
+    if (!showForm || !categoryTitle.trim() || !categoryImage) return undefined;
+
+    const t = setTimeout(() => {
+      createCategoryFromForm();
+    }, 700);
+
+    return () => clearTimeout(t);
+  }, [showForm, categoryTitle, categoryImage, createCategoryFromForm]);
 
   const handleDeleteCategory = (cat) => {
     setDeleteCandidate(cat);
@@ -288,31 +347,25 @@ const Home = () => {
     persistReorder(next);
   };
 
-  const toggleReorderMode = () => {
+  const toggleReorderMode = async () => {
     if (!reorderMode) {
-      if (editMode && hasPendingWork()) {
-        if (!window.confirm("Passando al riordino le modifiche non salvate andranno perse. Continuare?")) return;
-        revokeEditPreviews(categoryEdits);
-        setCategoryEdits({});
-        resetForm();
-      }
-      setEditMode(false);
+      await flushPendingEdits();
+      revokeEditPreviews(categoryEdits);
+      setCategoryEdits({});
+      resetForm();
       setShowForm(false);
+      setEditMode(false);
+    } else {
+      setDragOverIndex(null);
+      setDraggingIndex(null);
+      dragIndexRef.current = null;
     }
     setReorderMode((r) => !r);
   };
 
-  /** Chiude il riordino: l’ordine è già salvato a ogni rilascio; il pulsante matita/frecce torna verde chiaro come gli altri. */
-  const finishReorderMode = () => {
-    setReorderMode(false);
-    setDragOverIndex(null);
-    setDraggingIndex(null);
-    dragIndexRef.current = null;
-  };
-
-  const toggleEditMode = () => {
+  const toggleEditMode = async () => {
     if (editMode) {
-      if (hasPendingWork() && !window.confirm("Annullare le modifiche non salvate?")) return;
+      await flushPendingEdits();
       revokeEditPreviews(categoryEdits);
       setCategoryEdits({});
       resetForm();
@@ -324,29 +377,6 @@ const Home = () => {
     setReorderMode(false);
   };
 
-  /** Annulla dal gruppo in alto a destra (stesso ordine X · ✓ · matita delle altre pagine testo). */
-  const handleToolbarDismiss = () => {
-    if (reorderMode) {
-      finishReorderMode();
-      return;
-    }
-    if (showForm) {
-      const partial = categoryTitle || categoryImage || categoryImagePreview;
-      if (partial && !window.confirm("Annullare la nuova categoria?")) return;
-      resetForm();
-      setShowForm(false);
-      return;
-    }
-    if (editMode) {
-      if (hasPendingWork() && !window.confirm("Annullare le modifiche non salvate?")) return;
-      revokeEditPreviews(categoryEdits);
-      setCategoryEdits({});
-      resetForm();
-      setShowForm(false);
-      setEditMode(false);
-    }
-  };
-
   return (
     <>
       <section className="mx-auto mb-16 w-full max-w-[1920px] px-[4vw] py-[4vw]">
@@ -356,20 +386,8 @@ const Home = () => {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  className="btn-edit-gallery"
-                  onClick={openCreateForm}
-                  title="Aggiungi una nuova categoria"
-                >
-                  <span className="admin-action-icon">
-                    <Plus size={22} weight="duotone" />
-                  </span>
-                  <span className="admin-action-label">aggiungi categoria</span>
-                </button>
-
-                <button
-                  type="button"
                   className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
-                  onClick={toggleEditMode}
+                  onClick={() => toggleEditMode()}
                   title="Attiva o disattiva modifica sulle card"
                 >
                   <span className="admin-action-icon">
@@ -381,7 +399,7 @@ const Home = () => {
                 <button
                   type="button"
                   className={`btn-edit-gallery ${reorderMode ? "btn-edit-gallery-active" : ""}`}
-                  onClick={toggleReorderMode}
+                  onClick={() => toggleReorderMode()}
                   title="Trascina le card per riordinarle"
                 >
                   <span className="admin-action-icon">
@@ -392,47 +410,17 @@ const Home = () => {
               </div>
 
               <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
-                {(editMode || showForm || reorderMode) && (
-                  <>
-                    <button
-                      type="button"
-                      className="btn-cancel-icon btn-annulla-action"
-                      onClick={handleToolbarDismiss}
-                      title="Annulla"
-                      aria-label="Annulla"
-                    >
-                      <span className="admin-action-icon">
-                        <X size={18} weight="bold" aria-hidden />
-                      </span>
-                      <span className="admin-action-label">annulla</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-confirm-icon"
-                      onClick={() => {
-                        if (reorderMode) finishReorderMode();
-                        else saveAllChanges();
-                      }}
-                    title="Salva"
-                  >
-                    <span className="admin-action-icon">
-                      <Check size={22} weight="bold" />
-                    </span>
-                    <span className="admin-action-label">salva</span>
-                  </button>
-                  </>
-                )}
-
-                <Link
-                  to="/settings"
-                  className="btn-edit-gallery btn-logout-admin"
-                  title="Impostazioni"
+                <button
+                  type="button"
+                  className="btn-edit-gallery"
+                  onClick={openCreateForm}
+                  title="Aggiungi una nuova categoria"
                 >
-                  <span className="admin-action-icon md:hidden">
-                    <Wrench size={22} weight="duotone" />
+                  <span className="admin-action-icon">
+                    <Plus size={22} weight="duotone" />
                   </span>
-                  <span className="admin-action-label">Impostazioni</span>
-                </Link>
+                  <span className="admin-action-label">aggiungi categoria</span>
+                </button>
               </div>
             </div>
           )}
@@ -543,10 +531,10 @@ const Home = () => {
           aria-modal="true"
           aria-labelledby="delete-category-title"
         >
-          <div className="w-full max-w-sm bg-white p-6 shadow-xl">
+          <div className="modal-panel w-full max-w-sm bg-white p-6 shadow-xl">
             <h2
               id="delete-category-title"
-              className="page-title uppercase tracking-[0.12em]"
+              className="modal-title"
             >
               eliminare categoria?
             </h2>

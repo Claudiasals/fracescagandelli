@@ -31,9 +31,7 @@ const Footer = () => {
       </div>
 
       <p className="normal-case text-black/65">
-        Tutti i testi, le immagini e i contenuti presenti su questo sito sono protetti. &Egrave; vietata
-        la riproduzione, distribuzione, modifica o utilizzo, anche parziale, senza il consenso scritto
-        dell&apos;autrice.
+        Tutti i testi, le immagini e i contenuti presenti su questo sito sono protetti.
         <br />
         &copy; 2026 Francesca Gandelli. Tutti i diritti riservati.
       </p>
