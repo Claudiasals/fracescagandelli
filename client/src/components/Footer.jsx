@@ -1,65 +1,56 @@
-import { InstagramLogo, Envelope } from "phosphor-react";
 import { Link } from "react-router-dom";
-import EmailContactMenu from "./EmailContactMenu";
-import { useSiteSettings } from "../context/SiteSettingsContext.jsx";
 
 const Footer = () => {
-    const { instagramUrl } = useSiteSettings();
+  return (
+    <footer className="site-footer mt-12 w-full shrink-0 overflow-visible border-t border-black/10 bg-white px-6 py-8 text-center text-black">
+      <div className="my-3">
+        <Link
+          to="/privacy-policy"
+          className="site-footer-legal-link mx-2 text-black underline underline-offset-4 transition-opacity hover:opacity-55"
+        >
+          Privacy Policy
+        </Link>
+        <span className="text-black/30" aria-hidden>
+          |
+        </span>
+        <Link
+          to="/cookie-policy"
+          className="site-footer-legal-link mx-2 text-black underline underline-offset-4 transition-opacity hover:opacity-55"
+        >
+          Cookie Policy
+        </Link>
+        <span className="text-black/30" aria-hidden>
+          |
+        </span>
+        <Link
+          to="/terms-of-service"
+          className="site-footer-legal-link mx-2 text-black underline underline-offset-4 transition-opacity hover:opacity-55"
+        >
+          Note legali
+        </Link>
+      </div>
 
-    return (
-        <>
-            <footer
-                className="mt-12 w-full shrink-0 bg-[color-mix(in_srgb,var(--color-verdolight)_14%,var(--color-white))] px-6 py-8 text-center text-[var(--color-verdoscuro)] overflow-visible"
-            >
-                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-                    <a
-                        href={instagramUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="icon-menu"
-                        aria-label="Instagram"
-                    >
-                        <InstagramLogo size={30} />
-                    </a>
-                    <EmailContactMenu Icon={Envelope} iconSize={30} />
-                </div>
-                <div className="mx-auto my-6 h-px w-[min(92%,28rem)] rounded-full bg-[var(--color-verdolight)]/45" />
-                <div className="my-3 text-[10px] font-extralight normal-case tracking-normal">
-                    <Link
-                        to="/privacy-policy"
-                        className="mx-2 text-[var(--color-verdoscuro)] underline-offset-4 transition-colors hover:text-[var(--color-verdolight)] hover:underline"
-                    >
-                        Privacy Policy
-                    </Link>
-                    <span className="text-[var(--color-verdolight)]/55" aria-hidden>
-                        |
-                    </span>
-                    <Link
-                        to="/cookie-policy"
-                        className="mx-2 text-[var(--color-verdoscuro)] underline-offset-4 transition-colors hover:text-[var(--color-verdolight)] hover:underline"
-                    >
-                        Cookie Policy
-                    </Link>
-                    <span className="text-[var(--color-verdolight)]/55" aria-hidden>
-                        |
-                    </span>
-                    <Link
-                        to="/terms-of-service"
-                        className="mx-2 text-[var(--color-verdoscuro)] underline-offset-4 transition-colors hover:text-[var(--color-verdolight)] hover:underline"
-                    >
-                        Termini di Servizio
-                    </Link>
-                </div>
-                <p className="text-[10px] font-extralight normal-case tracking-normal text-[var(--color-verdoscuro)]/90">
-                    Tutti i testi, le immagini e i contenuti presenti su questo sito sono protetti. È vietato
-                    qualunque utilizzo senza il consenso scritto dell'autore. <br />
-                    © 2026 Francesca Gandelli. Tutti i diritti riservati.
-                </p>
-            </footer>
-            {/* 0.625rem = 10px, più piccolo di text-xs (che è 0.75rem = 12px).*/}
+      <p className="normal-case text-black/65">
+        Tutti i testi, le immagini e i contenuti presenti su questo sito sono protetti. &Egrave; vietata
+        la riproduzione, distribuzione, modifica o utilizzo, anche parziale, senza il consenso scritto
+        dell&apos;autrice.
+        <br />
+        &copy; 2026 Francesca Gandelli. Tutti i diritti riservati.
+      </p>
 
-        </>
-    );
+      <p className="mt-3 text-black/55">
+        Sviluppo web:{" "}
+        <a
+          href="https://claudiasalsini.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-black underline underline-offset-4 transition-opacity hover:opacity-55"
+        >
+          Claudia Salsini
+        </a>
+      </p>
+    </footer>
+  );
 };
 
 export default Footer;

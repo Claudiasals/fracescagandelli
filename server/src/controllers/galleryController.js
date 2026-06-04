@@ -10,10 +10,14 @@ function validateSlug(slug) {
   return s.length > 0 && s.length < 120 && slugPattern.test(s);
 }
 
-/** Didascalie solo in maiuscolo (stesso vincolo lato API). */
 function normalizeCaption(raw) {
   if (typeof raw !== "string") return "";
-  return raw.trim().slice(0, 500).toUpperCase();
+  return raw.trim().slice(0, 500);
+}
+
+function normalizeGalleryDescription(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.trim().slice(0, 3000);
 }
 
 export const getGalleryController = async (req, res) => {
@@ -26,9 +30,46 @@ export const getGalleryController = async (req, res) => {
     const photos = await GalleryPhoto.find({ categorySlug: slug }).sort({ order: 1 }).lean();
     const category = await Category.findOne({ slug }).lean();
     const title = category?.title || slug.replace(/-/g, " ");
-    res.status(200).json({ slug, title, photos });
+    const description =
+      typeof category?.description === "string" ? category.description.trim() : "";
+    res.status(200).json({
+      slug,
+      title,
+      categoryId: category?._id?.toString() ?? null,
+      description,
+      photos,
+    });
   } catch (error) {
     console.error("Errore get gallery:", error);
+    res.status(500).json({ message: "Errore server" });
+  }
+};
+
+export const patchGalleryDescriptionController = async (req, res) => {
+  try {
+    const raw = req.params.slug;
+    if (!validateSlug(raw)) {
+      return res.status(400).json({ message: "Slug non valido" });
+    }
+    const slug = raw.trim();
+    const description = normalizeGalleryDescription(req.body?.description);
+
+    const doc = await Category.findOneAndUpdate(
+      { slug },
+      { $set: { description } },
+      { new: true }
+    ).lean();
+
+    if (!doc) {
+      return res.status(404).json({ message: "Categoria non trovata" });
+    }
+
+    res.status(200).json({
+      slug: doc.slug,
+      description: doc.description?.trim() ?? "",
+    });
+  } catch (error) {
+    console.error("Errore patch gallery description:", error);
     res.status(500).json({ message: "Errore server" });
   }
 };

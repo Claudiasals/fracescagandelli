@@ -6,7 +6,6 @@ import Navbar from "./components/Navbar";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import Login from "./pages/Login";
 import Footer from "./components/Footer";
-import CookieConsentBanner from "./components/CookieConsentBanner.jsx";
 
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -25,7 +24,7 @@ const App = () => {
     <main
       id="app-main"
       tabIndex={-1}
-      className="flex min-h-screen w-full min-w-0 flex-col font-sans text-[var(--color-black)] bg-[var(--color-white)] overflow-x-clip focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-verdolight)] focus-visible:ring-offset-2"
+      className="flex min-h-screen w-full min-w-0 flex-col font-prose font-normal text-[var(--color-black)] bg-[var(--color-white)] overflow-x-clip focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-verdolight)] focus-visible:ring-offset-2"
     >
 
       <Navbar/>
@@ -54,8 +53,6 @@ const App = () => {
       </div>
 
       <Footer />
-
-      <CookieConsentBanner />
 
     </main>
     </SiteSettingsProvider>

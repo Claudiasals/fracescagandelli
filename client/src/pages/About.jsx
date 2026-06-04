@@ -1,14 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pencil, Check, X } from "phosphor-react";
 import EditablePageText from "../components/EditablePageText.jsx";
+import aboutFallbackImage from "../assets/images/about-portrait.jpg";
 
 import { API_BASE } from "../config/api.js";
 
 const API = API_BASE;
 
-/** Stesso aspetto del testo pubblicato (vedi <p> sotto). !uppercase vince la regola globale su textarea in index.css. */
-const aboutTextClassName =
-  "text-sm font-display font-extralight tracking-widest uppercase whitespace-pre-wrap text-black !uppercase break-words [overflow-wrap:anywhere]";
+const aboutTextClassName = "page-prose-text";
 
 const About = () => {
   const isAdmin = !!localStorage.getItem("adminToken");
@@ -18,21 +17,26 @@ const About = () => {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
 
-  const loadAbout = async () => {
+  const [aboutImages, setAboutImages] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const loadAbout = useCallback(async () => {
     try {
       const res = await fetch(`${API}/about`);
       const data = await res.json();
       if (data.text) setText(data.text);
+      if (Array.isArray(data.images)) setAboutImages(data.images);
     } catch (err) {
       console.error("Errore caricamento Chi Sono:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadAbout();
-  }, []);
+  }, [loadAbout]);
 
   const token = () => localStorage.getItem("adminToken");
 
@@ -62,6 +66,48 @@ const About = () => {
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const cancelImageChange = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleSaveImage = async () => {
+    if (!imageFile) return;
+    const formData = new FormData();
+    formData.append("photo", imageFile);
+
+    try {
+      const response = await fetch(`${API}/about/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      if (response.status === 401) {
+        alert("Sessione scaduta, rieffettua il login");
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        console.error("Errore backend:", data);
+        return;
+      }
+      if (Array.isArray(data.images)) setAboutImages(data.images);
+      cancelImageChange();
+    } catch (err) {
+      console.error("Errore upload immagine Chi Sono:", err);
+    }
+  };
+
   const cancelEdit = () => {
     if (editText !== text) {
       if (!window.confirm("Annullare le modifiche non salvate?")) return;
@@ -85,33 +131,25 @@ const About = () => {
   };
 
   const textDirty = editing && editText !== text;
+  const displayedImage = imagePreview || aboutImages.at(-1) || aboutFallbackImage;
 
   return (
-    <section className="about-section p-8 max-w-2xl mx-auto space-y-6">
-      <div
-        className={
-          isAdmin
-            ? "grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-2"
-            : "grid grid-cols-1 justify-items-center"
-        }
-      >
-        {isAdmin ? <span className="min-w-0 shrink" aria-hidden /> : null}
-        <h2 className="text-center font-display font-extralight text-2xl tracking-widest uppercase text-verdoscuro">
-          Chi Sono
-        </h2>
-
-        {isAdmin && (
-          <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 self-start p-2">
+    <section className="about-section mx-auto w-full max-w-5xl space-y-10 px-[4vw] py-10 md:py-14">
+      {isAdmin && (
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
             {editing && (
               <>
                 <button
                   type="button"
-                  className="btn-cancel-icon"
+                  className="btn-cancel-icon btn-annulla-action"
                   onClick={cancelEdit}
                   title="Annulla"
                   aria-label="Annulla"
                 >
-                  <X size={18} weight="bold" aria-hidden />
+                  <span className="admin-action-icon">
+                    <X size={18} weight="bold" aria-hidden />
+                  </span>
+                  <span className="admin-action-label">annulla</span>
                 </button>
                 <button
                   type="button"
@@ -120,7 +158,10 @@ const About = () => {
                   disabled={!textDirty}
                   title="Salva le modifiche"
                 >
-                  <Check size={22} weight="bold" />
+                  <span className="admin-action-icon">
+                    <Check size={22} weight="bold" />
+                  </span>
+                  <span className="admin-action-label">salva</span>
                 </button>
               </>
             )}
@@ -128,32 +169,84 @@ const About = () => {
               type="button"
               className={`btn-edit-gallery ${editing ? "btn-edit-gallery-active" : ""}`}
               onClick={toggleEdit}
-              title={editing ? "Chiudi" : "Modifica"}
+              title={editing ? "Chiudi" : "Modifica testo"}
             >
-              <Pencil size={22} weight="duotone" className="text-white" />
+              <span className="admin-action-icon">
+                <Pencil size={22} weight="duotone" />
+              </span>
+              <span className="admin-action-label">modifica testo</span>
             </button>
           </div>
+      )}
+
+      <div className="grid gap-10 md:grid-cols-[minmax(0,0.82fr)_minmax(0,1fr)] md:items-start">
+        <div className="relative w-full overflow-hidden bg-[var(--color-beige-light)]">
+          {isAdmin && (
+            <div className="absolute right-3 top-3 z-10 flex flex-wrap items-center justify-end gap-3">
+              {imageFile && (
+                <>
+                  <button
+                    type="button"
+                    className="btn-cancel-icon btn-annulla-action"
+                    onClick={cancelImageChange}
+                    title="Annulla"
+                    aria-label="Annulla"
+                  >
+                    <span className="admin-action-icon">
+                      <X size={18} weight="bold" aria-hidden />
+                    </span>
+                    <span className="admin-action-label">annulla</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveImage}
+                    className="btn-confirm-icon"
+                    title="Salva nuova foto"
+                  >
+                    <span className="admin-action-icon">
+                      <Check size={22} weight="bold" />
+                    </span>
+                    <span className="admin-action-label">salva</span>
+                  </button>
+                </>
+              )}
+              <label className="btn-edit-gallery" title="Modifica foto Chi Sono">
+                <span className="admin-action-icon">
+                  <Pencil size={22} weight="duotone" />
+                </span>
+                <span className="admin-action-label">modifica</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </label>
+            </div>
+          )}
+
+          <img
+            src={displayedImage}
+            alt="Francesca Gandelli"
+            className="aspect-[4/5] w-full object-cover"
+          />
+        </div>
+
+        {loading ? (
+          <div className="h-40 animate-pulse bg-[var(--color-beige-light)]" />
+        ) : isAdmin && editing ? (
+          <div className="w-full space-y-4">
+            <EditablePageText
+              value={editText}
+              onChange={setEditText}
+              className={aboutTextClassName}
+              aria-label="Testo Chi sono"
+            />
+          </div>
+        ) : (
+          <p className={aboutTextClassName}>{text}</p>
         )}
       </div>
-
-      {loading ? (
-        <div className="h-40 bg-gray-200 animate-pulse rounded" />
-      ) : (
-        <>
-          {isAdmin && editing ? (
-            <div className="w-full space-y-4">
-              <EditablePageText
-                value={editText}
-                onChange={setEditText}
-                className={`leading-relaxed ${aboutTextClassName}`}
-                aria-label="Testo Chi sono"
-              />
-            </div>
-          ) : (
-            <p className={aboutTextClassName}>{text}</p>
-          )}
-        </>
-      )}
     </section>
   );
 };

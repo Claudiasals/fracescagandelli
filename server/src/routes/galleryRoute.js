@@ -6,6 +6,7 @@ import {
   addGalleryPhotoController,
   reorderGalleryController,
   patchGalleryPhotoController,
+  patchGalleryDescriptionController,
   putGalleryPhotoImageController,
   deleteGalleryPhotoController,
 } from "../controllers/galleryController.js";
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get("/:slug", getGalleryController);
 router.post("/:slug", authMiddleware, uploadMiddleware.single("photo"), addGalleryPhotoController);
 router.put("/:slug/reorder", authMiddleware, reorderGalleryController);
+router.patch("/:slug/description", authMiddleware, patchGalleryDescriptionController);
 router.patch("/:slug/:photoId", authMiddleware, patchGalleryPhotoController);
 router.put(
   "/:slug/:photoId",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, Lock, Eye, EyeClosed, Wrench } from "phosphor-react";
+import { User, Lock, Eye, EyeClosed } from "phosphor-react";
 import { API_BASE } from "../config/api.js";
 
 const Login = () => {
@@ -64,79 +64,63 @@ const Login = () => {
     };
 
     return (
-        <div className="flex flex-col p-6 gap-6 min-h-screen items-center justify-center">
+        <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-[4vw] py-10">
 
-            <form className="flex flex-col gap-6 " onSubmit={handleLogin}>
+            <form className="flex w-full max-w-sm flex-col gap-6" onSubmit={handleLogin}>
 
                 <div className="relative gap-2 items-center">
                     <input
-                        className=" pl-12 border border-[var(--color-verdoscuro)] 
-                p-2 bg-white focus:border-[var(--color-verdolight)] 
-                outline-none peer"
+                        className="peer w-full border-0 border-b border-black/35 bg-transparent py-2 pl-10 pr-0 text-sm outline-none transition-colors focus:border-black"
                         type="text"
-                        placeholder="USERNAME"
+                        placeholder="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
                     <User size={26}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1E431D] 
-                    peer-focus:text-[var(--color-verdolight)]" />
+                        className="absolute left-0 top-1/2 -translate-y-1/2 text-black/70 peer-focus:text-black" />
                 </div>
 
                 <div className="relative gap-2 items-center">
                     <input
-                        className="font-family pl-12 border border-[var(--color-verdoscuro)] 
-                p-2 bg-white focus:border-[var(--color-verdolight)] 
-                outline-none peer"
+                        className="peer w-full border-0 border-b border-black/35 bg-transparent py-2 pl-10 pr-10 text-sm outline-none transition-colors focus:border-black"
                         // Aggiunta gestione mostra/nascondi password
                         type={showPassword ? "text" : "password"}
-                        placeholder="PASSWORD"
+                        placeholder="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
                     <Lock size={26}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 
-                        text-[#1E431D] peer-focus:text-[var(--color-verdolight)]" />
+                        className="absolute left-0 top-1/2 -translate-y-1/2 text-black/70 peer-focus:text-black" />
 
                     {showPassword ? (
                         <EyeClosed
                             size={22} weight="duotone"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 
-               text-[#1E431D] cursor-pointer 
-               peer-focus:text-[var(--color-verdolight)] 
-                                   "
+                            className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer text-black/70 peer-focus:text-black"
                             onClick={() => setShowPassword(false)}
                         />
                     ) : (
                         <Eye size={22} weight="duotone"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 
-                    text-[#1E431D] cursor-pointer peer-focus:text-[var(--color-verdolight)]
-                   "
+                            className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer text-black/70 peer-focus:text-black"
                             onClick={() => setShowPassword(true)} /> // icona per mostrare
                     )}
                 </div>
 
-                <div className="flex flex-row items-center justify-center gap-4 w-full max-w-md">
+                <div className="flex w-full max-w-md flex-row items-center justify-center gap-4">
                     {!!localStorage.getItem("adminToken") && (
                         <Link
                             to="/settings"
-                            className="btn-edit-gallery shrink-0"
+                            className="btn-primary shrink-0"
                             title="Impostazioni"
                             aria-label="Impostazioni"
                         >
-                            <Wrench size={20} weight="duotone" className="text-white" />
+                            Impostazioni
                         </Link>
                     )}
                     <button
                         type="submit"
-                        className="underline underline-offset-4 p-4 gap-2 h-10
-                   text-[var(--color-verdoscuro)] text-lg
-                   flex items-center justify-center
-                   hover:text-[var(--color-verdolight)]
-                   transition-colors duration-150
-                   w-auto shrink-0"
+                        className="btn-primary"
                     >
-                        Accedi
+                        accedi
                     </button>
                 </div>
 
@@ -147,5 +131,3 @@ const Login = () => {
 };
 
 export default Login;
-
-//  bg-[var(--color-verdolight)] #8CA576   --color-verdoscuro: #1E431D;

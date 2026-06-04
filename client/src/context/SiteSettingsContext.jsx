@@ -43,6 +43,7 @@ export function SiteSettingsProvider({ children }) {
   return <SiteSettingsContext.Provider value={value}>{children}</SiteSettingsContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSiteSettings() {
   return useContext(SiteSettingsContext);
 }

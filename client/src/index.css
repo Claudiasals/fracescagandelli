@@ -1,29 +1,145 @@
 @import "tailwindcss";
 @import "./components.css";
 
-/* Evita che il browser “ancori” lo scroll quando il layout cambia dopo il cambio route (SPA). */
-html {
-  overflow-anchor: none;
+@font-face {
+  font-family: "TeX Gyre Heros";
+  src: url("/fonts/texgyreheros-regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-/* Palette personalizzata */
+html {
+  overflow-anchor: none;
+  background: #ffffff;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+:root {
+  --site-nav-height: 3.25rem;
+  --site-nav-text-size: clamp(0.88rem, 2.2vw, 1.25rem);
+  --btn-radius: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --site-nav-height: 3.5rem;
+  }
+}
+
 @theme {
-  --color-verdoscuro: #1E431D;
-  --color-verdolight: #8CA576;
-  --color-beige-light: #D8D1C1;
-  --color-beige-medium: #D9BD9C;
-  --color-marrone: #A68365;
-  /* Giallo ocra (pulsanti secondari / Annulla) */
-  --color-giallo-ocra: #c9a84c;
-  --color-giallo-ocra-hover: #a88b38;
-  --color-white: #FFFFFF;
+  --font-sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --font-prose: "TeX Gyre Heros", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-page-title: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-brand: "Bodoni Moda", "Times New Roman", Times, serif;
+  --font-display: "Bodoni Moda", "Times New Roman", Times, serif;
+  --font-menu: "Bodoni Moda", "Times New Roman", Times, serif;
+  --font-weight-normal: 200;
+  --color-verdoscuro: #000000;
+  --color-verdolight: #2f3033;
+  --color-beige-light: #eeeeec;
+  --color-beige-medium: #d8d8d2;
+  --color-marrone: #6d6a63;
+  --color-giallo-ocra: #8f8d86;
+  --color-giallo-ocra-hover: #5d5b55;
+  --color-white: #ffffff;
   --color-black: #000000;
 }
 
-body, textarea, select, button {
-  font-family: 'Raleway', sans-serif;
-  @apply font-extralight tracking-widest uppercase;}
+body {
+  margin: 0;
+  background: var(--color-white);
+  color: var(--color-black);
+  font-family: var(--font-prose);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 
-input, textarea {
+button,
+input:not(.card-title),
+textarea:not(.editable-page-text-inner),
+select {
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+textarea.editable-page-text-inner {
+  font-family: var(--font-prose);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: inherit;
+  text-transform: none;
+  color: var(--color-black);
+}
+
+button {
+  text-transform: none;
+}
+
+h1:not(.site-brand-title):not(.page-title),
+h2:not(.page-title),
+h3:not(.card-title),
+h4 {
+  font-family: var(--font-prose);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* Titolo header: Bodoni Moda */
+.site-nav .site-brand-link {
+  font-family: var(--font-brand);
+  font-weight: 400;
+  font-style: normal;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  -webkit-font-smoothing: antialiased;
+}
+
+.site-nav h1.site-brand-title {
+  margin: 0;
+  font: inherit;
+  font-size: var(--site-nav-text-size);
+  line-height: 1.08;
+  color: var(--color-black);
+}
+
+/* Desktop: voci menu stessa grandezza del titolo header */
+@media (min-width: 768px) {
+  .site-nav .btn-navbar {
+    font-size: var(--site-nav-text-size);
+    line-height: 1.08;
+    letter-spacing: 0.1em;
+    padding: 0.15rem 0;
+  }
+}
+
+h1.page-title,
+h2.page-title {
+  font-family: var(--font-prose);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+input,
+textarea {
   text-transform: none;
 }

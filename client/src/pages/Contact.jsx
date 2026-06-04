@@ -8,8 +8,12 @@ import { API_BASE } from "../config/api.js";
 
 const API = API_BASE;
 
-const introClass =
-  "text-sm font-display font-extralight tracking-widest uppercase whitespace-pre-wrap text-black !uppercase break-words [overflow-wrap:anywhere]";
+const introClass = "page-prose-text";
+
+const formFieldClass =
+  `${introClass} mt-1 box-border w-full min-w-0 max-w-full rounded-none border-0 border-b border-black/35 bg-transparent py-1 pl-2 pr-0 leading-normal outline-none transition-colors focus:border-black placeholder:text-black/70`;
+
+const contactLinkClass = `${introClass} underline-offset-4 transition-[text-decoration-color] duration-200 hover:underline`;
 
 /** Estrae lo username dal link Instagram (es. …/francescagandelli_ph/). */
 function instagramUsernameFromUrl(url) {
@@ -162,31 +166,22 @@ const Contact = () => {
   };
 
   return (
-    <section className="contact-section w-full min-w-0 max-w-2xl mx-auto box-border px-4 py-8 sm:px-8 space-y-6">
-      <div
-        className={
-          isAdmin
-            ? "grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-2"
-            : "grid grid-cols-1 justify-items-center"
-        }
-      >
-        {isAdmin ? <span className="min-w-0 shrink" aria-hidden /> : null}
-        <h2 className="text-center font-display font-extralight text-2xl tracking-widest uppercase text-verdoscuro">
-          Contattami
-        </h2>
-
-        {isAdmin && (
-          <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 self-start p-2">
+    <section className="contact-section mx-auto w-full max-w-5xl space-y-8 px-[4vw] py-10 md:py-14">
+      {isAdmin && (
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
             {editing && (
               <>
                 <button
                   type="button"
-                  className="btn-cancel-icon"
+                  className="btn-cancel-icon btn-annulla-action"
                   onClick={cancelEdit}
                   title="Annulla"
                   aria-label="Annulla"
                 >
-                  <X size={18} weight="bold" aria-hidden />
+                  <span className="admin-action-icon">
+                    <X size={18} weight="bold" aria-hidden />
+                  </span>
+                  <span className="admin-action-label">annulla</span>
                 </button>
                 <button
                   type="button"
@@ -195,7 +190,10 @@ const Contact = () => {
                   disabled={!textDirty}
                   title="Salva le modifiche"
                 >
-                  <Check size={22} weight="bold" />
+                  <span className="admin-action-icon">
+                    <Check size={22} weight="bold" />
+                  </span>
+                  <span className="admin-action-label">salva</span>
                 </button>
               </>
             )}
@@ -203,30 +201,53 @@ const Contact = () => {
               type="button"
               className={`btn-edit-gallery ${editing ? "btn-edit-gallery-active" : ""}`}
               onClick={toggleEdit}
-              title={editing ? "Chiudi" : "Modifica"}
+              title={editing ? "Chiudi" : "Modifica testo"}
             >
-              <Pencil size={22} weight="duotone" className="text-white" />
+              <span className="admin-action-icon">
+                <Pencil size={22} weight="duotone" />
+              </span>
+              <span className="admin-action-label">modifica testo</span>
             </button>
           </div>
-        )}
-      </div>
+      )}
 
+      <div className="mx-auto box-border w-full min-w-0 max-w-3xl space-y-8">
       <div className="flex flex-col justify-center gap-6 min-w-0 w-full">
+        {!(isAdmin && editing) && (
+          <div className="flex min-w-0 w-full flex-col gap-1.5">
+            <a
+              href={`mailto:${publicEmail}`}
+              className={contactLinkClass}
+            >
+              Email: {publicEmail}
+            </a>
+
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={contactLinkClass}
+            >
+              {instagramUser ? `Instagram: ${instagramUser}` : "Instagram"}
+            </a>
+          </div>
+        )}
+
         {loading ? (
-          <div className="h-40 bg-gray-200 animate-pulse rounded" />
+          <div className="h-40 animate-pulse bg-[var(--color-beige-light)]" />
         ) : isAdmin && editing ? (
           <div className="space-y-8 w-full min-w-0">
             <EditablePageText
               value={editIntro}
               onChange={setEditIntro}
-              className={`leading-relaxed ${introClass}`}
+              className={introClass}
               aria-label="Testo introduttivo contatti"
             />
             <div className="w-full pt-2">
               <EditablePageText
                 value={editFormLead}
                 onChange={setEditFormLead}
-                className="text-base font-extralight leading-relaxed whitespace-pre-wrap break-words text-[var(--color-verdolight)] [overflow-wrap:anywhere]"
+                className={`${introClass}`}
                 aria-label="Testo sopra il modulo di contatto"
               />
             </div>
@@ -238,73 +259,54 @@ const Contact = () => {
 
       <div className="flex flex-col gap-8 min-w-0 w-full">
         {errorMessage && (
-          <p className="text-red-600 font-semibold">{errorMessage}</p>
+          <p className={`${introClass} text-[#8a1f1f]`}>{errorMessage}</p>
         )}
 
         {!submitted && !loading && !(isAdmin && editing) ? (
-          <form
-            id="contact-form"
-            onSubmit={handleSubmit}
-            className="flex w-full min-w-0 max-w-full flex-col gap-4 pt-2 box-border"
-          >
-            <p className="text-base font-extralight whitespace-pre-wrap break-words text-[var(--color-verdolight)] [overflow-wrap:anywhere]">
-              {formLeadText}
-            </p>
-
-            <label className="flex min-w-0 w-full max-w-full flex-col">
-              <input
-                type="text"
-                name="name"
-                className="mt-1 box-border w-full min-w-0 max-w-full rounded border border-gray-300 p-2"
-                placeholder="NOME"
-              />
-            </label>
-            <label className="flex min-w-0 w-full max-w-full flex-col">
-              <input
-                type="email"
-                name="email"
-                className="mt-1 box-border w-full min-w-0 max-w-full rounded border border-gray-300 p-2"
-                placeholder="EMAIL"
-              />
-            </label>
-            <label className="flex min-w-0 w-full max-w-full flex-col">
-              <textarea
-                name="message"
-                rows="5"
-                className="mt-1 box-border w-full min-w-0 max-w-full resize-y rounded border border-gray-300 p-2"
-                placeholder="MESSAGGIO"
-              />
-            </label>
-
-            <div className="flex justify-end">
-              <button type="submit" className="btn-contact-submit max-w-full">
-                Invia
-              </button>
-            </div>
-          </form>
-        ) : !submitted && loading ? null : !submitted ? null : (
-          <p>Grazie per il messaggio!</p>
-        )}
-
-        {!(isAdmin && editing) && (
-          <div className="-mt-2 mb-12 flex min-w-0 w-full max-w-full flex-col items-center gap-1.5 text-center">
-            <a
-              href={`mailto:${publicEmail}`}
-              className="block w-full max-w-full min-w-0 break-words text-sm text-black transition-colors duration-200 [overflow-wrap:anywhere] hover:text-[var(--color-verdolight)]"
+          <div className="contact-form-block mx-[15px] box-border min-w-0 w-auto max-w-full md:mx-[30px]">
+            <form
+              id="contact-form"
+              onSubmit={handleSubmit}
+              className="box-border flex w-full min-w-0 max-w-full flex-col gap-5 pt-2"
             >
-              email: {publicEmail}
-            </a>
+              <p className={introClass}>{formLeadText}</p>
 
-            <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full max-w-full min-w-0 break-words text-sm text-black transition-colors duration-200 [overflow-wrap:anywhere] hover:text-[var(--color-verdolight)]"
-            >
-              {instagramUser ? `Instagram: ${instagramUser}` : "Instagram"}
-            </a>
+              <label className="flex min-w-0 w-full max-w-full flex-col">
+                <input
+                  type="text"
+                  name="name"
+                  className={formFieldClass}
+                  placeholder="nome"
+                />
+              </label>
+              <label className="flex min-w-0 w-full max-w-full flex-col">
+                <input
+                  type="email"
+                  name="email"
+                  className={formFieldClass}
+                  placeholder="email"
+                />
+              </label>
+              <label className="flex min-w-0 w-full max-w-full flex-col">
+                <textarea
+                  name="message"
+                  rows="5"
+                  className={`${formFieldClass} resize-y`}
+                  placeholder="messaggio"
+                />
+              </label>
+
+              <div className="flex justify-end pt-1">
+                <button type="submit" className="btn-contact-submit max-w-full">
+                  Invia
+                </button>
+              </div>
+            </form>
           </div>
+        ) : !submitted && loading ? null : !submitted ? null : (
+          <p className={`${introClass} lowercase`}>Grazie per il messaggio!</p>
         )}
+      </div>
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Check, X, ArrowLeft } from "phosphor-react";
 import EditablePageText from "./EditablePageText.jsx";
@@ -8,8 +8,7 @@ import { API_BASE } from "../config/api.js";
 
 const API = API_BASE;
 
-const legalBodyClass =
-  "text-sm normal-case font-extralight leading-relaxed text-black tracking-normal whitespace-pre-wrap break-words [overflow-wrap:anywhere]";
+const legalBodyClass = "page-prose-text page-prose-text--sm";
 
 function splitParagraphs(body) {
   return body.split(/\n\n+/).filter((p) => p.length > 0);
@@ -42,7 +41,7 @@ const LegalDocumentPage = ({ title, field, mailtoEmail = false }) => {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await fetch(`${API}/legal-pages`);
       const data = await res.json();
@@ -53,11 +52,11 @@ const LegalDocumentPage = ({ title, field, mailtoEmail = false }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [field]);
 
   useEffect(() => {
     load();
-  }, [field]);
+  }, [load]);
 
   const token = () => localStorage.getItem("adminToken");
 
@@ -119,14 +118,14 @@ const LegalDocumentPage = ({ title, field, mailtoEmail = false }) => {
   const resolvedParagraphs = splitParagraphs(resolvedForView);
 
   return (
-    <section className="max-w-3xl mx-auto p-8 space-y-4">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <h1 className="min-w-0 flex-1 font-display font-extralight text-base tracking-widest uppercase text-[var(--color-verdolight)]">
+    <section className="mx-auto w-full max-w-4xl space-y-4 px-[4vw] py-10 md:py-14">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <h1 className="page-title min-w-0 flex-1">
           {title}
         </h1>
 
         {isAdmin && (
-          <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2 self-start p-2">
+          <div className="flex shrink-0 flex-nowrap items-center justify-end gap-4 self-start p-2">
             <Link
               to="/settings"
               className="btn-edit-gallery shrink-0"
@@ -138,18 +137,24 @@ const LegalDocumentPage = ({ title, field, mailtoEmail = false }) => {
                 }
               }}
             >
-              <ArrowLeft size={22} weight="duotone" className="text-white" />
+              <span className="admin-action-icon">
+                <ArrowLeft size={22} weight="duotone" />
+              </span>
+              <span className="admin-action-label">indietro</span>
             </Link>
             {editing && (
               <>
                 <button
                   type="button"
-                  className="btn-cancel-icon"
+                  className="btn-cancel-icon btn-annulla-action"
                   onClick={cancelEdit}
                   title="Annulla"
                   aria-label="Annulla"
                 >
-                  <X size={18} weight="bold" aria-hidden />
+                  <span className="admin-action-icon">
+                    <X size={18} weight="bold" aria-hidden />
+                  </span>
+                  <span className="admin-action-label">annulla</span>
                 </button>
                 <button
                   type="button"
@@ -158,7 +163,10 @@ const LegalDocumentPage = ({ title, field, mailtoEmail = false }) => {
                   disabled={!dirty}
                   title="Salva le modifiche"
                 >
-                  <Check size={22} weight="bold" />
+                  <span className="admin-action-icon">
+                    <Check size={22} weight="bold" />
+                  </span>
+                  <span className="admin-action-label">salva</span>
                 </button>
               </>
             )}
@@ -166,21 +174,24 @@ const LegalDocumentPage = ({ title, field, mailtoEmail = false }) => {
               type="button"
               className={`btn-edit-gallery ${editing ? "btn-edit-gallery-active" : ""}`}
               onClick={toggleEdit}
-              title={editing ? "Chiudi" : "Modifica"}
+              title={editing ? "Chiudi" : "Modifica testo"}
             >
-              <Pencil size={22} weight="duotone" className="text-white" />
+              <span className="admin-action-icon">
+                <Pencil size={22} weight="duotone" />
+              </span>
+              <span className="admin-action-label">modifica testo</span>
             </button>
           </div>
         )}
       </div>
 
       {loading ? (
-        <div className="h-40 bg-gray-200 animate-pulse rounded" />
+        <div className="h-40 animate-pulse bg-[var(--color-beige-light)]" />
       ) : isAdmin && editing ? (
         <div className="space-y-4 w-full">
           {field === "privacyText" && (
-            <p className="text-sm font-extralight normal-case tracking-normal text-gray-600 leading-relaxed">
-              <code className="text-xs bg-gray-100 px-1 rounded">{"{{email}}"}</code>
+            <p className="text-sm font-normal normal-case leading-[1.7] tracking-[0.03em] text-black/60">
+              <code className="bg-[var(--color-beige-light)] px-1 text-xs">{"{{email}}"}</code>
               {" : questo campo si aggiorna in automatico con l'email registrata nelle impostazioni"}
             </p>
           )}

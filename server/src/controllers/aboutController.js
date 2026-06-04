@@ -72,11 +72,11 @@ export const addAboutImageController = async (req, res) => {
         if (!doc) {
           doc = new About({ text: DEFAULT_ABOUT_TEXT, images: [result.secure_url] });
         } else {
-          doc.images = [...(doc.images || []), result.secure_url];
+          doc.images = [result.secure_url];
         }
         await doc.save();
         res.status(200).json({
-          message: "Immagine aggiunta",
+          message: "Immagine aggiornata",
           images: doc.images,
         });
       }

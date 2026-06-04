@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import Card from "../components/Card";
-import { Pencil, ArrowsClockwise, Plus, Check, X } from "phosphor-react";
+import { Pencil, ArrowsClockwise, Plus, Check, X, Wrench } from "phosphor-react";
 
 import { API_BASE } from "../config/api.js";
 
@@ -9,24 +10,20 @@ const API = API_BASE;
 const Home = () => {
   const isAdmin = !!localStorage.getItem("adminToken");
 
-  const [coverFile, setCoverFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [coverUrl, setCoverUrl] = useState(null);
-  const [coverLoading, setCoverLoading] = useState(true);
-
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
 
   const [categoryTitle, setCategoryTitle] = useState("");
-  const [categoryDescription, setCategoryDescription] = useState("");
   const [categoryImage, setCategoryImage] = useState(null);
   const [categoryImagePreview, setCategoryImagePreview] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
   /** Bozze modifiche categorie esistenti (conferma con l’icona ✓ in alto). */
   const [categoryEdits, setCategoryEdits] = useState({});
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deletingCategory, setDeletingCategory] = useState(false);
 
   const dragIndexRef = useRef(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
@@ -40,35 +37,18 @@ const Home = () => {
 
   const isCategoryDirty = (cat, d) => {
     if (!d) return false;
-    return (
-      d.title !== cat.title ||
-      d.description !== cat.description ||
-      d.imageFile != null
-    );
+    return d.title !== cat.title || d.imageFile != null;
   };
 
   const hasPendingWork = () => {
     const dirtyCat = categories.some((c) => isCategoryDirty(c, categoryEdits[c._id]));
-    const partialCreate =
-      showForm && (categoryTitle || categoryDescription || categoryImage || categoryImagePreview);
+    const partialCreate = showForm && (categoryTitle || categoryImage || categoryImagePreview);
     return dirtyCat || partialCreate;
   };
 
   const token = () => localStorage.getItem("adminToken");
 
   useEffect(() => {
-    const fetchCover = async () => {
-      try {
-        const res = await fetch(`${API}/cover`);
-        const data = await res.json();
-        if (data.coverUrl) setCoverUrl(data.coverUrl);
-      } catch (err) {
-        console.error("Errore fetch copertina:", err);
-      } finally {
-        setCoverLoading(false);
-      }
-    };
-
     const fetchCategories = async () => {
       try {
         const res = await fetch(`${API}/categories`);
@@ -81,7 +61,6 @@ const Home = () => {
       }
     };
 
-    fetchCover();
     fetchCategories();
   }, []);
 
@@ -92,60 +71,11 @@ const Home = () => {
     }
   }, [reorderMode]);
 
-  const handleCoverChange = (e) => {
-    const file = e.target.files[0];
-    setCoverFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setPreview(reader.result);
-    if (file) reader.readAsDataURL(file);
-  };
-
-  const handleSaveCover = async () => {
-    if (!coverFile) return;
-    const formData = new FormData();
-    formData.append("cover", coverFile);
-
-    try {
-      const response = await fetch(`${API}/cover`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token()}` },
-        body: formData,
-      });
-      if (response.status === 401) {
-        alert("Sessione scaduta, rieffettua il login");
-        return;
-      }
-      let data = null;
-      try {
-        data = await response.json();
-      } catch {
-        console.error("Risposta non JSON dal backend");
-      }
-      if (!response.ok) {
-        console.error("Errore backend:", data);
-        return;
-      }
-      setCoverUrl(data.coverUrl + "?t=" + Date.now());
-      setPreview(null);
-      setCoverFile(null);
-    } catch (err) {
-      console.error("Errore upload:", err);
-    }
-  };
-
   const resetForm = () => {
     if (categoryImagePreview) URL.revokeObjectURL(categoryImagePreview);
     setCategoryTitle("");
-    setCategoryDescription("");
     setCategoryImage(null);
     setCategoryImagePreview(null);
-  };
-
-  const clearCategoryEdits = () => {
-    setCategoryEdits((prev) => {
-      revokeEditPreviews(prev);
-      return {};
-    });
   };
 
   const updateDraft = (id, patch) => {
@@ -154,7 +84,6 @@ const Home = () => {
       if (!cat) return prev;
       const cur = prev[id] || {
         title: cat.title,
-        description: cat.description,
         imageFile: null,
         localPreview: null,
       };
@@ -169,7 +98,6 @@ const Home = () => {
       if (!cat) return prev;
       const cur = prev[id] || {
         title: cat.title,
-        description: cat.description,
         imageFile: null,
         localPreview: null,
       };
@@ -195,18 +123,17 @@ const Home = () => {
     for (const cat of categories) {
       const d = categoryEdits[cat._id];
       if (!d || !isCategoryDirty(cat, d)) continue;
-      if (!d.title?.trim() || !d.description?.trim()) {
-        alert("Titolo e descrizione sono obbligatori per ogni categoria modificata.");
+      if (!d.title?.trim()) {
+        alert("Il titolo e' obbligatorio per ogni categoria modificata.");
         return;
       }
     }
 
-    const createTentativo =
-      showForm && (categoryTitle || categoryDescription || categoryImage);
+    const createTentativo = showForm && (categoryTitle || categoryImage);
     if (createTentativo) {
-      if (!categoryTitle || !categoryDescription || !categoryImage) {
+      if (!categoryTitle || !categoryImage) {
         alert(
-          "Completa tutti i campi della nuova categoria (immagine inclusa) oppure usa la X rossa per chiudere il blocco nuova categoria."
+          "Inserisci titolo e immagine della nuova categoria oppure usa la X rossa per chiudere il blocco nuova categoria."
         );
         return;
       }
@@ -218,7 +145,6 @@ const Home = () => {
         if (!d || !isCategoryDirty(cat, d)) continue;
         const formData = new FormData();
         formData.append("title", d.title.trim());
-        formData.append("description", d.description.trim());
         if (d.imageFile) formData.append("image", d.imageFile);
         const res = await fetch(`${API}/categories/${cat._id}`, {
           method: "PUT",
@@ -236,10 +162,9 @@ const Home = () => {
         }
       }
 
-      if (showForm && categoryTitle && categoryDescription && categoryImage) {
+      if (showForm && categoryTitle && categoryImage) {
         const formData = new FormData();
         formData.append("title", categoryTitle);
-        formData.append("description", categoryDescription);
         formData.append("image", categoryImage);
         const res = await fetch(`${API}/categories/create`, {
           method: "POST",
@@ -273,11 +198,16 @@ const Home = () => {
     }
   };
 
-  const handleDeleteCategory = async (cat) => {
-    if (!window.confirm(`Eliminare la categoria "${cat.title}"?`)) return;
+  const handleDeleteCategory = (cat) => {
+    setDeleteCandidate(cat);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!deleteCandidate) return;
 
     try {
-      const res = await fetch(`${API}/categories/${cat._id}`, {
+      setDeletingCategory(true);
+      const res = await fetch(`${API}/categories/${deleteCandidate._id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token()}` },
       });
@@ -291,8 +221,11 @@ const Home = () => {
         return;
       }
       if (Array.isArray(data.categories)) setCategories(data.categories);
+      setDeleteCandidate(null);
     } catch (err) {
       console.error(err);
+    } finally {
+      setDeletingCategory(false);
     }
   };
 
@@ -398,8 +331,7 @@ const Home = () => {
       return;
     }
     if (showForm) {
-      const partial =
-        categoryTitle || categoryDescription || categoryImage || categoryImagePreview;
+      const partial = categoryTitle || categoryImage || categoryImagePreview;
       if (partial && !window.confirm("Annullare la nuova categoria?")) return;
       resetForm();
       setShowForm(false);
@@ -417,120 +349,99 @@ const Home = () => {
 
   return (
     <>
-      <section className="relative w-full h-64 md:h-96 overflow-hidden">
-        {isAdmin && (
-          <div className="absolute top-4 right-4 z-10 flex flex-wrap items-center justify-end gap-2">
-            {coverFile && (
-              <button
-                type="button"
-                onClick={handleSaveCover}
-                className="btn-confirm-icon"
-                title="Applica la nuova copertina"
-              >
-                <Check size={22} weight="bold" />
-              </button>
-            )}
-            <label className="btn-edit-gallery">
-              <Pencil size={24} weight="duotone" className="text-white" />
-              <input
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleCoverChange}
-              />
-            </label>
-          </div>
-        )}
-
-        {coverLoading ? (
-          <div className="absolute inset-0 bg-gray-200 animate-pulse" />
-        ) : (
-          <img
-            src={preview || coverUrl}
-            alt="Copertina"
-            className="h-full w-full object-cover"
-          />
-        )}
-      </section>
-
-      <section className="px-8 pb-8 pt-[22px] md:mt-15 mb-16">
-        <div className="flex flex-col gap-2">
+      <section className="mx-auto mb-16 w-full max-w-[1920px] px-[4vw] py-[4vw]">
+        <div className="flex flex-col gap-[25px]">
           {isAdmin && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {(editMode || showForm || reorderMode) && (
-                <>
-                  <button
-                    type="button"
-                    className="btn-cancel-icon"
-                    onClick={handleToolbarDismiss}
-                    title="Annulla"
-                    aria-label="Annulla"
-                  >
-                    <X size={18} weight="bold" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-confirm-icon"
-                    onClick={() => {
-                      if (reorderMode) finishReorderMode();
-                      else saveAllChanges();
-                    }}
-                    title={
-                      reorderMode
-                        ? "Chiudi riordino (l’ordine è già salvato a ogni spostamento)"
-                        : "Applica tutte le modifiche alle categorie e la nuova categoria (se presente)"
-                    }
-                  >
-                    <Check size={22} weight="bold" />
-                  </button>
-                </>
-              )}
-              <button
-                type="button"
-                className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
-                onClick={toggleEditMode}
-                title="Attiva o disattiva modifica sulle card"
-              >
-                <Pencil size={22} weight="duotone" className="text-white" />
-              </button>
+            <div className="flex w-full flex-wrap items-center justify-between gap-[25px]">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  className="btn-edit-gallery"
+                  onClick={openCreateForm}
+                  title="Aggiungi una nuova categoria"
+                >
+                  <span className="admin-action-icon">
+                    <Plus size={22} weight="duotone" />
+                  </span>
+                  <span className="admin-action-label">aggiungi categoria</span>
+                </button>
 
-              <button
-                type="button"
-                className={`btn-edit-gallery ${reorderMode ? "btn-edit-gallery-active" : ""}`}
-                onClick={toggleReorderMode}
-                title="Trascina le card per riordinarle"
-              >
-                <ArrowsClockwise size={22} className="text-white" />
-              </button>
+                <button
+                  type="button"
+                  className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
+                  onClick={toggleEditMode}
+                  title="Attiva o disattiva modifica sulle card"
+                >
+                  <span className="admin-action-icon">
+                    <Pencil size={22} weight="duotone" />
+                  </span>
+                  <span className="admin-action-label">modifica</span>
+                </button>
 
-              <button
-                type="button"
-                className="btn-edit-gallery"
-                onClick={openCreateForm}
-                title="Aggiungi una nuova categoria"
-              >
-                <Plus size={24} weight="duotone" className="text-white" />
-              </button>
+                <button
+                  type="button"
+                  className={`btn-edit-gallery ${reorderMode ? "btn-edit-gallery-active" : ""}`}
+                  onClick={toggleReorderMode}
+                  title="Trascina le card per riordinarle"
+                >
+                  <span className="admin-action-icon">
+                    <ArrowsClockwise size={22} />
+                  </span>
+                  <span className="admin-action-label">riordina</span>
+                </button>
+              </div>
+
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+                {(editMode || showForm || reorderMode) && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-cancel-icon btn-annulla-action"
+                      onClick={handleToolbarDismiss}
+                      title="Annulla"
+                      aria-label="Annulla"
+                    >
+                      <span className="admin-action-icon">
+                        <X size={18} weight="bold" aria-hidden />
+                      </span>
+                      <span className="admin-action-label">annulla</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-confirm-icon"
+                      onClick={() => {
+                        if (reorderMode) finishReorderMode();
+                        else saveAllChanges();
+                      }}
+                    title="Salva"
+                  >
+                    <span className="admin-action-icon">
+                      <Check size={22} weight="bold" />
+                    </span>
+                    <span className="admin-action-label">salva</span>
+                  </button>
+                  </>
+                )}
+
+                <Link
+                  to="/settings"
+                  className="btn-edit-gallery btn-logout-admin"
+                  title="Impostazioni"
+                >
+                  <span className="admin-action-icon md:hidden">
+                    <Wrench size={22} weight="duotone" />
+                  </span>
+                  <span className="admin-action-label">Impostazioni</span>
+                </Link>
+              </div>
             </div>
-          )}
-
-          {isAdmin && editMode && (
-            <p className="w-full text-center md:text-right text-sm font-extralight tracking-wide text-[var(--color-verdoscuro)] max-w-3xl ml-auto">
-              Clicca su foto, titolo o sottotitolo per modificarli.
-            </p>
-          )}
-
-          {isAdmin && reorderMode && (
-            <p className="text-sm text-center md:text-right text-[var(--color-verdoscuro)] max-w-xl ml-auto leading-relaxed">
-              Trascina le categorie per modificarne l'ordine.
-            </p>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-[9px] items-stretch">
+        <div className="mt-[25px] grid grid-cols-1 items-start gap-x-[25px] gap-y-[25px] sm:grid-cols-2 lg:grid-cols-3">
           {showForm && (
-            <div className="card flex h-full min-w-0 flex-col transition-shadow duration-200 ease-in-out">
-              <label className="h-48 w-full shrink-0 bg-gray-200 flex cursor-pointer items-center justify-center overflow-hidden">
+            <div className="card flex h-full min-w-0 flex-col transition-opacity duration-200 ease-in-out">
+              <label className="flex aspect-[4/5] w-full shrink-0 cursor-pointer items-center justify-center overflow-hidden bg-[var(--color-beige-light)]">
                 {categoryImagePreview ? (
                   <img
                     src={categoryImagePreview}
@@ -554,25 +465,20 @@ const Home = () => {
                 />
               </label>
 
-              <div className="flex h-[11rem] shrink-0 flex-col justify-start gap-2 overflow-y-auto overflow-x-hidden bg-white p-4 py-3 text-center">
+              <div className="card-heading-slot">
                 <input
                   type="text"
-                  placeholder="Titolo (es. Famiglia)"
+                  placeholder="Titolo"
                   value={categoryTitle}
                   onChange={(e) => setCategoryTitle(e.target.value)}
-                  className="min-w-0 w-full shrink-0 break-words text-center text-lg outline-none [overflow-wrap:anywhere]"
-                />
-                <textarea
-                  placeholder="Sottotitolo / descrizione (es. Momenti in famiglia)"
-                  value={categoryDescription}
-                  onChange={(e) => setCategoryDescription(e.target.value)}
-                  className="min-h-[4rem] min-w-0 w-full flex-1 resize-none break-words text-center text-sm outline-none [overflow-wrap:anywhere]"
+                  className="card-title min-w-0 w-full shrink-0 break-words border-0 bg-transparent p-0 text-center outline-none [overflow-wrap:anywhere]"
                 />
               </div>
-              <div className="flex shrink-0 justify-center border-t border-black/10 bg-white px-4 pb-4 pt-3">
+
+              <div className="flex shrink-0 justify-center bg-white pb-0 pt-4">
                 <button
                   type="button"
-                  className="btn-cancel-icon"
+                  className="btn-cancel-icon btn-annulla-action"
                   onClick={() => {
                     resetForm();
                     setShowForm(false);
@@ -580,14 +486,17 @@ const Home = () => {
                   title="Annulla"
                   aria-label="Annulla"
                 >
-                  <X size={18} weight="bold" aria-hidden />
+                  <span className="admin-action-icon">
+                    <X size={18} weight="bold" aria-hidden />
+                  </span>
+                  <span className="admin-action-label">annulla</span>
                 </button>
               </div>
             </div>
           )}
 
           {categoriesLoading ? (
-            <div className="col-span-full h-48 bg-gray-200 animate-pulse rounded" />
+            <div className="col-span-full h-64 animate-pulse bg-[var(--color-beige-light)]" />
           ) : (
             categories.map((cat, index) => {
               const showDropTarget =
@@ -626,6 +535,46 @@ const Home = () => {
           )}
         </div>
       </section>
+
+      {deleteCandidate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-category-title"
+        >
+          <div className="w-full max-w-sm bg-white p-6 shadow-xl">
+            <h2
+              id="delete-category-title"
+              className="page-title uppercase tracking-[0.12em]"
+            >
+              eliminare categoria?
+            </h2>
+            <p className="mt-4 text-sm font-normal leading-relaxed text-black">
+              Confermi di voler eliminare la categoria "{deleteCandidate.title}"? Questa azione non
+              puo' essere annullata.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="btn-secondary btn-modal-action btn-annulla-outline"
+                onClick={() => setDeleteCandidate(null)}
+                disabled={deletingCategory}
+              >
+                annulla
+              </button>
+              <button
+                type="button"
+                className="btn-danger-action"
+                onClick={confirmDeleteCategory}
+                disabled={deletingCategory}
+              >
+                elimina categoria
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -5,8 +5,17 @@ import { useLayoutEffect, useRef } from "react";
  * (contentEditable altera il DOM e non è fedele a \n / spazi).
  * Altezza si adatta al contenuto; stessi stili tipografici della vista pubblica.
  */
-const EditablePageText = ({ value, onChange, className = "", "aria-label": ariaLabel }) => {
+const EditablePageText = ({
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  className = "",
+  autoFocus = true,
+  "aria-label": ariaLabel,
+}) => {
   const ref = useRef(null);
+  const initialValueRef = useRef(value ?? "");
 
   const adjustHeight = () => {
     const el = ref.current;
@@ -20,14 +29,15 @@ const EditablePageText = ({ value, onChange, className = "", "aria-label": ariaL
   }, [value]);
 
   useLayoutEffect(() => {
+    if (!autoFocus) return;
     const el = ref.current;
     if (!el) return;
     requestAnimationFrame(() => {
       el.focus();
-      const len = (value ?? "").length;
+      const len = initialValueRef.current.length;
       el.setSelectionRange(len, len);
     });
-  }, []);
+  }, [autoFocus]);
 
   return (
     <textarea
@@ -37,6 +47,8 @@ const EditablePageText = ({ value, onChange, className = "", "aria-label": ariaL
         onChange(e.target.value);
         requestAnimationFrame(adjustHeight);
       }}
+      onBlur={onBlur}
+      placeholder={placeholder}
       aria-label={ariaLabel}
       rows={1}
       spellCheck={false}

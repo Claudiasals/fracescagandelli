@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
-import { Pencil, ArrowsClockwise, Plus, Trash, Check, CircleNotch, X } from "phosphor-react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { Pencil, ArrowsClockwise, Plus, Trash, Check, X } from "phosphor-react";
 import { lockBodyScroll, unlockBodyScroll } from "../utils/bodyScrollLock.js";
+import EditablePageText from "../components/EditablePageText.jsx";
 
 import { API_BASE } from "../config/api.js";
 
 const API = `${API_BASE}/gallery`;
 
-/**
- * Galleria unificata: didascalie solo in MAIUSCOLO; testo come Privacy/Cookie/Termini (paragrafo, senza riquadri).
- */
+const galleryIntroClass = "page-prose-text";
+
+/** Galleria a due colonne, solo immagini. */
 const GalleryPage = () => {
   const location = useLocation();
   const params = useParams();
@@ -23,21 +24,16 @@ const GalleryPage = () => {
   const isAdmin = !!localStorage.getItem("adminToken");
   const token = () => localStorage.getItem("adminToken");
 
-  const [title, setTitle] = useState("");
   const [photos, setPhotos] = useState([]);
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
 
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
-  const [uploadCaptionDraft, setUploadCaptionDraft] = useState("");
   const [previewUrl, setPreviewUrl] = useState(null);
   const uploadFileInputRef = useRef(null);
-
-  /** Bozze didascalie in modalità modifica (allineate ai dati server quando cambiano le foto). */
-  const [captionDrafts, setCaptionDrafts] = useState({});
-  const [savingCaptions, setSavingCaptions] = useState(false);
 
   const dragIndexRef = useRef(null);
   /** Feedback durante il riordino: cella sotto il cursore e foto trascinata. */
@@ -53,8 +49,9 @@ const GalleryPage = () => {
     try {
       const res = await fetch(`${API}/${encodeURIComponent(slug)}`);
       const data = await res.json();
-      if (data.title) setTitle(data.title);
       if (Array.isArray(data.photos)) setPhotos(data.photos);
+      if (typeof data.description === "string") setDescription(data.description);
+      else setDescription("");
     } catch (err) {
       console.error("Errore caricamento galleria:", err);
     } finally {
@@ -62,31 +59,33 @@ const GalleryPage = () => {
     }
   }, [slug]);
 
+  const saveDescription = async () => {
+    try {
+      const res = await fetch(`${API}/${encodeURIComponent(slug)}/description`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token()}`,
+        },
+        body: JSON.stringify({ description }),
+      });
+      if (res.status === 401) {
+        alert("Sessione scaduta, rieffettua il login");
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      if (typeof data.description === "string") setDescription(data.description);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     loadGallery();
   }, [loadGallery]);
 
-  /** In modifica: inizializza o aggiunge nuove foto senza cancellare le bozze già modificate. */
-  useEffect(() => {
-    if (!editMode) {
-      setCaptionDrafts({});
-      return;
-    }
-    setCaptionDrafts((prev) => {
-      const next = { ...prev };
-      const ids = new Set(photos.map((p) => p._id));
-      photos.forEach((p) => {
-        if (next[p._id] === undefined) {
-          next[p._id] = (p.caption || "").toUpperCase();
-        }
-      });
-      Object.keys(next).forEach((id) => {
-        if (!ids.has(id)) delete next[id];
-      });
-      return next;
-    });
-  }, [editMode, photos]);
-
+  /** Ripulisce il feedback visuale quando si esce dal riordino. */
   useEffect(() => {
     if (!reorderMode) {
       setDragOverIndex(null);
@@ -113,7 +112,7 @@ const GalleryPage = () => {
     };
   }, [lightbox]);
 
-  /** Clic su +: subito finestra di scelta file; dopo la scelta si apre il modale con anteprima e didascalia. */
+  /** Clic su +: subito finestra di scelta file; dopo la scelta si apre il modale con anteprima. */
   const openFilePicker = () => {
     uploadFileInputRef.current?.click();
   };
@@ -127,7 +126,6 @@ const GalleryPage = () => {
       return;
     }
     setPendingFile(file);
-    setUploadCaptionDraft("");
     setPreviewUrl(URL.createObjectURL(file));
     setUploadModalOpen(true);
   };
@@ -135,48 +133,7 @@ const GalleryPage = () => {
   const closeUploadModal = () => {
     setUploadModalOpen(false);
     setPendingFile(null);
-    setUploadCaptionDraft("");
     setPreviewUrl(null);
-  };
-
-  /** Un solo salvataggio: tutte le didascalie modificate, poi esci dalla modifica. */
-  const handleSaveAllCaptions = async () => {
-    if (photos.length === 0) return;
-    setSavingCaptions(true);
-    try {
-      let nextPhotos = photos;
-      for (const photo of photos) {
-        const caption = (captionDrafts[photo._id] ?? "").trim().toUpperCase();
-        const serverCaption = (photo.caption || "").trim().toUpperCase();
-        if (caption === serverCaption) continue;
-
-        const res = await fetch(`${API}/${encodeURIComponent(slug)}/${photo._id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token()}`,
-          },
-          body: JSON.stringify({ caption }),
-        });
-        if (res.status === 401) {
-          alert("Sessione scaduta, rieffettua il login");
-          return;
-        }
-        if (!res.ok) {
-          alert("Errore nel salvataggio di una didascalia. Riprova.");
-          return;
-        }
-        const doc = await res.json();
-        nextPhotos = nextPhotos.map((x) => (x._id === doc._id ? { ...x, ...doc } : x));
-      }
-      setPhotos(nextPhotos);
-      setEditMode(false);
-    } catch (err) {
-      console.error(err);
-      alert("Errore di rete durante il salvataggio.");
-    } finally {
-      setSavingCaptions(false);
-    }
   };
 
   const handleConfirmUpload = async () => {
@@ -187,7 +144,6 @@ const GalleryPage = () => {
 
     const formData = new FormData();
     formData.append("photo", pendingFile);
-    formData.append("caption", uploadCaptionDraft.trim().toUpperCase());
 
     try {
       const res = await fetch(`${API}/${encodeURIComponent(slug)}`, {
@@ -338,35 +294,37 @@ const GalleryPage = () => {
         {isAdmin && editMode && (
           <button
             type="button"
-            className="absolute top-2 right-2 z-10 btn-edit-gallery"
+            className="btn-cancel-icon btn-delete-photo absolute right-2 top-2 z-10"
             onClick={(e) => {
               e.stopPropagation();
               handleDelete(photo);
             }}
             title="Elimina la foto dalla galleria"
+            aria-label="Elimina foto"
           >
-            <Trash size={20} weight="duotone" className="text-white" />
+            <span className="admin-action-icon">
+              <Trash size={20} weight="duotone" />
+            </span>
+            <span className="admin-action-label">elimina foto</span>
           </button>
         )}
 
         <div
-          className={`w-full shadow-md ${
+          className={`w-full ${
             showDropTarget ? "reorder-photo-glow overflow-hidden rounded-none" : "overflow-hidden"
-          } ${canOpenLightbox ? "cursor-pointer focus-within:ring-2 focus-within:ring-white/50" : ""}`}
+          } ${canOpenLightbox ? "cursor-pointer focus-within:outline focus-within:outline-1 focus-within:outline-black" : ""}`}
           role={canOpenLightbox ? "button" : undefined}
           tabIndex={canOpenLightbox ? 0 : undefined}
           aria-label={canOpenLightbox ? "Apri immagine a schermo intero" : undefined}
           onClick={
-            canOpenLightbox
-              ? () => setLightbox({ imageUrl: photo.imageUrl, caption: photo.caption || "" })
-              : undefined
+            canOpenLightbox ? () => setLightbox({ imageUrl: photo.imageUrl }) : undefined
           }
           onKeyDown={
             canOpenLightbox
               ? (e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    setLightbox({ imageUrl: photo.imageUrl, caption: photo.caption || "" });
+                    setLightbox({ imageUrl: photo.imageUrl });
                   }
                 }
               : undefined
@@ -374,39 +332,12 @@ const GalleryPage = () => {
         >
           <img
             src={photo.imageUrl}
-            alt={photo.caption || ""}
+            alt="Foto galleria"
             className="pointer-events-none block h-auto w-full max-w-full align-top select-none"
             loading="lazy"
             decoding="async"
             draggable={false}
           />
-        </div>
-
-        <div className="gallery-caption-slot">
-          {isAdmin && editMode ? (
-            <textarea
-              value={captionDrafts[photo._id] ?? ""}
-              onChange={(e) =>
-                setCaptionDrafts((prev) => ({
-                  ...prev,
-                  [photo._id]: e.target.value.toUpperCase(),
-                }))
-              }
-              rows={2}
-              placeholder="SOLO MAIUSCOLO"
-              autoCapitalize="characters"
-              spellCheck={false}
-              maxLength={500}
-              className="gallery-caption-input"
-            />
-          ) : (
-            <p
-              className="gallery-caption"
-              title={photo.caption?.trim() ? photo.caption.trim().toUpperCase() : undefined}
-            >
-              {photo.caption?.trim() ? photo.caption.trim().toUpperCase() : "\u00A0"}
-            </p>
-          )}
         </div>
       </div>
     );
@@ -414,14 +345,14 @@ const GalleryPage = () => {
 
   if (!slug) {
     return (
-      <section className="max-w-6xl mx-auto p-8 space-y-4">
-        <p className="text-gray-600">Sezione non trovata.</p>
+      <section className="gallery-page mx-auto w-full max-w-[1920px] py-[4vw]">
+        <p className="text-[11px] lowercase tracking-[0.03em] text-black/60">Sezione non trovata.</p>
       </section>
     );
   }
 
   return (
-    <section className="max-w-6xl mx-auto p-8 space-y-4">
+    <section className="gallery-page mx-auto w-full max-w-[1920px] py-[4vw]">
       {lightbox && (
         <div
           className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 p-4"
@@ -432,7 +363,7 @@ const GalleryPage = () => {
         >
           <button
             type="button"
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-black/40 text-white transition-colors hover:bg-black/60"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-[var(--btn-radius)] border-2 border-white bg-black/40 text-white transition-colors hover:bg-black/60"
             onClick={(e) => {
               e.stopPropagation();
               setLightbox(null);
@@ -448,15 +379,10 @@ const GalleryPage = () => {
           >
             <img
               src={lightbox.imageUrl}
-              alt={lightbox.caption?.trim() ? lightbox.caption.trim() : "Foto galleria"}
+              alt="Foto galleria"
               className="max-h-[85vh] max-w-full object-contain"
             />
           </div>
-          {lightbox.caption?.trim() ? (
-            <p className="mt-4 max-w-3xl text-center text-sm font-extralight uppercase tracking-wide text-white">
-              {lightbox.caption.trim()}
-            </p>
-          ) : null}
         </div>
       )}
 
@@ -481,47 +407,34 @@ const GalleryPage = () => {
           onClick={closeUploadModal}
         >
           <div
-            className="w-full max-w-md bg-white p-6 shadow-xl rounded-none border border-gray-200 space-y-4"
+            className="w-full max-w-md space-y-4 border border-black/15 bg-white p-6 shadow-none"
             onClick={(e) => e.stopPropagation()}
           >
             <h2
               id="upload-dialog-title"
-              className="font-display font-extralight text-lg tracking-widest uppercase text-verdoscuro"
+              className="page-title"
             >
               Nuova foto
             </h2>
-            <div className="w-full overflow-hidden border border-gray-200 bg-gray-50">
+            <div className="w-full overflow-hidden border border-black/10 bg-[var(--color-beige-light)]">
               <img
                 src={previewUrl}
                 alt=""
                 className="mx-auto block max-h-[min(50vh,20rem)] w-full object-contain"
               />
             </div>
-            <div>
-              <label htmlFor="upload-caption" className="block text-sm text-black font-extralight mb-1 normal-case">
-                Didascalia
-              </label>
-              <textarea
-                id="upload-caption"
-                value={uploadCaptionDraft}
-                onChange={(e) => setUploadCaptionDraft(e.target.value.toUpperCase())}
-                rows={2}
-                maxLength={500}
-                placeholder="DIDASCALIA (SOLO MAIUSCOLO)"
-                autoCapitalize="characters"
-                spellCheck={false}
-                className="gallery-modal-caption"
-              />
-            </div>
             <div className="flex flex-row items-center justify-between gap-4 pt-2">
               <button
                 type="button"
-                className="btn-cancel-icon"
+                className="btn-cancel-icon btn-annulla-action"
                 onClick={closeUploadModal}
                 title="Annulla"
                 aria-label="Annulla"
               >
-                <X size={18} weight="bold" aria-hidden />
+                <span className="admin-action-icon">
+                  <X size={18} weight="bold" aria-hidden />
+                </span>
+                <span className="admin-action-label">annulla</span>
               </button>
               <button type="button" className="btn-primary" onClick={handleConfirmUpload}>
                 Carica foto
@@ -531,95 +444,134 @@ const GalleryPage = () => {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-4 justify-between items-start mb-6">
-        <h1 className="font-display font-extralight text-base tracking-widest uppercase text-verdoscuro">
-          {loading ? "…" : title}
-        </h1>
+      {isAdmin && (
+          <div className="mb-[25px] flex flex-wrap items-center justify-between gap-[25px]">
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" className="btn-edit-gallery" onClick={openFilePicker} title="Aggiungi foto">
+                <span className="admin-action-icon">
+                  <Plus size={24} weight="duotone" />
+                </span>
+                <span className="admin-action-label">aggiungi foto</span>
+              </button>
 
-        {isAdmin && (
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {((editMode && photos.length > 0) || reorderMode) && (
               <button
                 type="button"
-                className="btn-confirm-icon"
-                disabled={reorderMode ? false : savingCaptions}
-                onClick={() => {
-                  if (reorderMode) finishReorderMode();
-                  else handleSaveAllCaptions();
-                }}
-                title={
-                  savingCaptions && !reorderMode
-                    ? "Salvataggio in corso…"
-                    : reorderMode
-                      ? "Chiudi riordino (l’ordine è già salvato a ogni spostamento)"
-                      : "Salva tutte le didascalie modificate"
-                }
+                className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
+                onClick={toggleEditMode}
+                title="Modifica"
               >
-                {savingCaptions && !reorderMode ? (
-                  <CircleNotch size={22} weight="bold" className="animate-spin" />
-                ) : (
-                  <Check size={22} weight="bold" />
-                )}
+                <span className="admin-action-icon">
+                  <Pencil size={22} weight="duotone" />
+                </span>
+                <span className="admin-action-label">modifica</span>
               </button>
-            )}
-            <button
-              type="button"
-              className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
-              onClick={toggleEditMode}
-              title="Modifica"
-            >
-              <Pencil size={22} weight="duotone" className="text-white" />
-            </button>
 
-            <button
-              type="button"
-              className={`btn-edit-gallery ${reorderMode ? "btn-edit-gallery-active" : ""}`}
-              onClick={toggleReorderMode}
-              title="Trascina le foto per riordinarle"
-            >
-              <ArrowsClockwise size={22} className="text-white" />
-            </button>
+              <button
+                type="button"
+                className={`btn-edit-gallery ${reorderMode ? "btn-edit-gallery-active" : ""}`}
+                onClick={toggleReorderMode}
+                title="Trascina le foto per riordinarle"
+              >
+                <span className="admin-action-icon">
+                  <ArrowsClockwise size={22} />
+                </span>
+                <span className="admin-action-label">riordina</span>
+              </button>
+            </div>
 
-            <button type="button" className="btn-edit-gallery" onClick={openFilePicker} title="Aggiungi foto">
-              <Plus size={24} weight="duotone" className="text-white" />
-            </button>
+            <div className="ml-auto flex shrink-0 flex-col items-end gap-0.5">
+              {(editMode || reorderMode) && (
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    className="btn-cancel-icon btn-annulla-action"
+                    onClick={() => {
+                      const wasEditing = editMode;
+                      setEditMode(false);
+                      setReorderMode(false);
+                      if (wasEditing) loadGallery();
+                    }}
+                    title="Annulla"
+                    aria-label="Annulla"
+                  >
+                    <span className="admin-action-icon">
+                      <X size={18} weight="bold" aria-hidden />
+                    </span>
+                    <span className="admin-action-label">annulla</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-confirm-icon"
+                    onClick={async () => {
+                      if (reorderMode) finishReorderMode();
+                      else if (editMode) {
+                        await saveDescription();
+                        setEditMode(false);
+                      } else setEditMode(false);
+                    }}
+                    title="Salva"
+                  >
+                    <span className="admin-action-icon">
+                      <Check size={22} weight="bold" />
+                    </span>
+                    <span className="admin-action-label">salva</span>
+                  </button>
+                </div>
+              )}
+              <Link
+                to="/"
+                className="admin-toolbar-text-link"
+                title="Torna alle categorie"
+              >
+                torna alle categorie
+              </Link>
+            </div>
           </div>
-        )}
-      </div>
-
-      {isAdmin && editMode && (
-        <p className="mb-4 w-full max-w-3xl text-center text-sm font-extralight tracking-wide text-[var(--color-verdoscuro)] md:text-right ml-auto">
-          Clicca sulle foto per modificarle.
-        </p>
-      )}
-
-      {isAdmin && reorderMode && (
-        <p className="text-sm text-[var(--color-verdoscuro)] mb-4 text-right max-w-xl ml-auto leading-relaxed">
-          Trascina le categorie per modificarne l&apos;ordine.
-        </p>
       )}
 
       {loading ? (
-        <div className="h-48 bg-gray-200 animate-pulse" />
-      ) : photos.length === 0 ? (
-        <p className="text-gray-600 text-center py-12">
-          {isAdmin ? "Nessuna foto ancora: usa il pulsante + per aggiungerne." : "Contenuto in arrivo."}
-        </p>
+        <div className="h-64 animate-pulse bg-[var(--color-beige-light)]" />
       ) : (
-        <div className="gallery-masonry-row flex flex-row items-start [&>*]:min-w-0">
-          <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
-            {photos
-              .map((photo, index) => ({ photo, index }))
-              .filter(({ index }) => index % 2 === 0)
-              .map(({ photo, index }) => renderPhotoCard(photo, index))}
-          </div>
-          <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
-            {photos
-              .map((photo, index) => ({ photo, index }))
-              .filter(({ index }) => index % 2 === 1)
-              .map(({ photo, index }) => renderPhotoCard(photo, index))}
-          </div>
-        </div>
+        <>
+          {photos.length === 0 ? (
+            <p className="py-12 text-center text-[11px] lowercase tracking-[0.03em] text-black/60">
+              {isAdmin ? "Nessuna foto ancora." : "Contenuto in arrivo."}
+            </p>
+          ) : (
+            <div className="gallery-masonry-row flex flex-row items-start [&>*]:min-w-0">
+              <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
+                {photos
+                  .map((photo, index) => ({ photo, index }))
+                  .filter(({ index }) => index % 2 === 0)
+                  .map(({ photo, index }) => renderPhotoCard(photo, index))}
+              </div>
+              <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
+                {photos
+                  .map((photo, index) => ({ photo, index }))
+                  .filter(({ index }) => index % 2 === 1)
+                  .map(({ photo, index }) => renderPhotoCard(photo, index))}
+              </div>
+            </div>
+          )}
+
+          {(description.trim() || (isAdmin && editMode)) && (
+            <div className="gallery-page-intro mt-8 max-w-3xl">
+              {isAdmin && editMode ? (
+                <EditablePageText
+                  value={description}
+                  onChange={setDescription}
+                  autoFocus={false}
+                  className={galleryIntroClass}
+                  aria-label="Racconto fotografico della galleria"
+                  placeholder="Racconto fotografico di questa galleria…"
+                />
+              ) : (
+                <p className={galleryIntroClass}>{description.trim()}</p>
+              )}
+            </div>
+          )}
+        </>
       )}
     </section>
   );

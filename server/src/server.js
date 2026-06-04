@@ -8,8 +8,6 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoute.js";
 // importo CORS per permettere richieste cross-origin
 import cors from "cors";
-// rotta per copertina portfolio
-import coverRoutes from "./routes/coverRoute.js";
 import aboutRoutes from "./routes/aboutRoute.js";
 import contactPageRoutes from "./routes/contactPageRoute.js";
 import categoryRoutes from "./routes/categoryRoute.js";
@@ -52,25 +50,36 @@ transporter.verify((error, success) => {
 
 // Configurazione CORS: sviluppo locale + frontend pubblicato su Netlify.
 const allowedOrigins = [
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
   "http://localhost:5173",
+  "http://localhost:5174",
   "http://localhost:4173",
   "https://francescagandelli.netlify.app",
 ];
 
+const localNetworkOrigin =
+  /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+
+function corsOriginAllowed(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (process.env.NODE_ENV !== "production" && localNetworkOrigin.test(origin)) {
+    return true;
+  }
+  return false;
+}
+
 // Middleware CORS per Express
-// Configuro CORS per permettere richieste solo dai domini specificati
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `La richiesta da ${origin} non è permessa!`;
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true // permette cookie se servono in futuro
-}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (corsOriginAllowed(origin)) return callback(null, true);
+      return callback(new Error(`La richiesta da ${origin} non è permessa!`), false);
+    },
+    credentials: true,
+  })
+);
 /*
 origin → è il dominio che sta facendo la richiesta (es. http://localhost:5173).
 callback → è una funzione che chiami per dire “ok, questa origine è permessa” oppure “no, blocca”.
@@ -89,9 +98,6 @@ app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => {
   res.send("Server Francesca Gandelli Portfolio OK");
 });
-
-// Rotta per copertina
-app.use("/api", coverRoutes);
 
 // Chi Sono: testo e galleria immagini (GET pubblico, PUT/POST/DELETE admin)
 app.use("/api", aboutRoutes);
@@ -152,10 +158,10 @@ const startServer = async () => {
     // porta su cui il server ascolterà le richieste
     // Usa PORT dal .env oppure fallback a 5000 se non definita
     const PORT = process.env.PORT || 5000;
+    const HOST = process.env.HOST || "0.0.0.0";
 
-    // Avvio del server Express
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`); // quando il server parte
+    app.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}`);
     });
   } catch (error) {
     // Se c'è un errore nella connessione al DB, stampa l'errore
