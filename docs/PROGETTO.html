@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio Francesca Gandelli — presentazione progetto</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #444;
+      --border: #ccc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--text);
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: 1.15rem;
+      margin-top: 2rem;
+    }
+    p, li { margin: 0.6rem 0; }
+    ul { padding-left: 1.25rem; }
+    a { color: #0b57d0; }
+    video {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      margin-top: 1rem;
+      border-radius: 8px;
+      background: #000;
+    }
+    .back {
+      margin-top: 2rem;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Portfolio Francesca Gandelli</h1>
+  <p>
+    Progetto full-stack: sito pubblico per il portfolio fotografico e pannello admin per
+    aggiornare contenuti senza toccare il codice.
+  </p>
+
+  <h2>Video demo del gestionale</h2>
+  <p>
+    Registrazione delle operazioni principali in area admin: categorie in home, gallerie
+    fotografiche, upload e riordino foto, modifica testi e impostazioni.
+  </p>
+  <video src="francescagandelli-demo.mp4" controls preload="metadata">
+    Il browser non supporta la riproduzione video.
+    <a href="francescagandelli-demo.mp4">Scarica il video demo</a>.
+  </video>
+
+  <h2>Cosa include</h2>
+  <ul>
+    <li>Home con categorie fotografiche (titolo, immagine, ordine)</li>
+    <li>Gallerie per categoria con foto, didascalie e riordino</li>
+    <li>Pagine Chi sono, Contatti e note legali modificabili</li>
+    <li>Login admin, email/Instagram da impostazioni</li>
+    <li>Immagini su Cloudinary, dati su MongoDB Atlas</li>
+  </ul>
+
+  <h2>Stack</h2>
+  <ul>
+    <li><strong>Frontend:</strong> React, Vite, Tailwind — deploy Netlify</li>
+    <li><strong>Backend:</strong> Node.js, Express, JWT — deploy Render</li>
+  </ul>
+
+  <p class="back">
+    <a href="../README.md">← Torna al README del repository</a>
+  </p>
+</body>
+</html>

@@ -7,6 +7,18 @@ Il progetto e diviso in due parti:
 - `client`: frontend React/Vite pubblicato su Netlify
 - `server`: backend Node.js/Express pubblicato su Render
 
+## Presentazione progetto
+
+Sito portfolio fotografico con **area admin integrata**: dalla home si gestiscono categorie e copertine; in ogni galleria si caricano, riordinano ed eliminano le foto; le pagine Chi sono, Contatti e note legali si modificano inline. Il backend salva testi e immagini su MongoDB e Cloudinary.
+
+**Video demo del gestionale** (registrazione delle funzioni admin principali; **audio disponibile** — attiva l’audio dal player):
+
+https://github.com/Claudiasals/francescagandelli/raw/main/docs/francescagandelli-demo.mp4
+
+Se il player non compare: [scarica o apri il video](https://github.com/Claudiasals/francescagandelli/raw/main/docs/francescagandelli-demo.mp4).
+
+In locale puoi aprire anche [docs/PROGETTO.html](docs/PROGETTO.html) nel browser (stessa spiegazione e video a schermo intero).
+
 ## Preview
 
 | Sito pubblico | Home admin |
@@ -76,6 +88,9 @@ francescagandelli/
       models/
       routes/
   docs/
+    PROGETTO.html
+    francescagandelli-demo.mp4
+    GUIDA-ADMIN.md
 ```
 
 ## Setup locale
