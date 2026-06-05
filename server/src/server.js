@@ -4,6 +4,7 @@ import express from "express";
 import dotenv from "dotenv";
 // funzione per connetterci a MongoDB (db.js)
 import connectDB from "./config/db.js";
+import { syncPageContentIfNeeded } from "./content/syncPageContent.js";
 // importo le rotte per l'autenticazione
 import authRoutes from "./routes/authRoute.js";
 // importo CORS per permettere richieste cross-origin
@@ -153,6 +154,7 @@ const startServer = async () => {
   try {
     // Aspetta la connessione al database
     await connectDB();
+    await syncPageContentIfNeeded();
     console.log("Database connesso correttamente!"); // Stampa messaggio se va tutto bene
 
     // porta su cui il server ascolterà le richieste

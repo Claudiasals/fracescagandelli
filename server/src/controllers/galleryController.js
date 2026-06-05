@@ -1,6 +1,7 @@
 import cloudinary from "../config/cloudinary.js";
 import GalleryPhoto from "../models/galleryPhotoModel.js";
 import Category from "../models/categoryModel.js";
+import { resolveGalleryIntro } from "../content/galleryCopy.js";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 
@@ -30,8 +31,10 @@ export const getGalleryController = async (req, res) => {
     const photos = await GalleryPhoto.find({ categorySlug: slug }).sort({ order: 1 }).lean();
     const category = await Category.findOne({ slug }).lean();
     const title = category?.title || slug.replace(/-/g, " ");
-    const description =
-      typeof category?.description === "string" ? category.description.trim() : "";
+    const description = resolveGalleryIntro(
+      slug,
+      typeof category?.description === "string" ? category.description : ""
+    );
     res.status(200).json({
       slug,
       title,

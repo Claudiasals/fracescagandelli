@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import Card from "../components/Card";
-import { Pencil, ArrowsClockwise, Plus, X } from "phosphor-react";
+import AdminSidebarPortal from "../components/AdminSidebarPortal.jsx";
+import { Pencil, ArrowsClockwise, Plus, X, Check } from "phosphor-react";
 
 import { API_BASE } from "../config/api.js";
 
@@ -109,7 +110,22 @@ const Home = () => {
     });
   };
 
-  const openCreateForm = () => {
+  const cancelCreateForm = () => {
+    resetForm();
+    setShowForm(false);
+  };
+
+  const openCreateForm = async () => {
+    if (showForm) {
+      cancelCreateForm();
+      return;
+    }
+    if (editMode) {
+      await flushPendingEdits();
+      revokeEditPreviews(categoryEdits);
+      setCategoryEdits({});
+      setEditMode(false);
+    }
     resetForm();
     setShowForm(true);
     setReorderMode(false);
@@ -247,16 +263,6 @@ const Home = () => {
     };
   }, [categoryEdits, editMode, categories, saveCategoryDraft]);
 
-  useEffect(() => {
-    if (!showForm || !categoryTitle.trim() || !categoryImage) return undefined;
-
-    const t = setTimeout(() => {
-      createCategoryFromForm();
-    }, 700);
-
-    return () => clearTimeout(t);
-  }, [showForm, categoryTitle, categoryImage, createCategoryFromForm]);
-
   const handleDeleteCategory = (cat) => {
     setDeleteCandidate(cat);
   };
@@ -372,156 +378,186 @@ const Home = () => {
       setShowForm(false);
       setEditMode(false);
     } else {
+      cancelCreateForm();
       setEditMode(true);
     }
     setReorderMode(false);
   };
 
+  const categoryMasonrySide = (index) => {
+    const combinedIndex = showForm ? index + 1 : index;
+    return combinedIndex % 2 === 0 ? "left" : "right";
+  };
+
+  const renderCreateCategoryForm = () => (
+    <div className="card flex min-w-0 w-full flex-col transition-opacity duration-200 ease-in-out">
+      <label className="flex aspect-[4/5] w-full shrink-0 cursor-pointer items-center justify-center overflow-hidden bg-[var(--color-beige-light)]">
+        {categoryImagePreview ? (
+          <img
+            src={categoryImagePreview}
+            alt="Anteprima"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-gray-600 text-center text-sm px-2">Carica immagine</span>
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            if (categoryImagePreview) URL.revokeObjectURL(categoryImagePreview);
+            setCategoryImage(file);
+            setCategoryImagePreview(URL.createObjectURL(file));
+          }}
+        />
+      </label>
+
+      <div className="card-heading-slot">
+        <input
+          type="text"
+          placeholder="Titolo"
+          value={categoryTitle}
+          onChange={(e) => setCategoryTitle(e.target.value)}
+          className="card-title min-w-0 w-full shrink-0 break-words border-0 bg-transparent p-0 text-center outline-none [overflow-wrap:anywhere]"
+        />
+      </div>
+    </div>
+  );
+
+  const renderCategoryCell = (cat, index) => {
+    const showDropTarget =
+      reorderMode &&
+      isAdmin &&
+      draggingIndex !== null &&
+      dragOverIndex === index &&
+      draggingIndex !== index;
+
+    return (
+      <div
+        key={cat._id}
+        draggable={isAdmin && reorderMode}
+        onDragStart={(e) => handleDragStart(e, index)}
+        onDragEnd={handleDragEnd}
+        onDragOver={(e) => handleDragOverCell(e, index)}
+        onDrop={(e) => handleDrop(e, index)}
+        className={`min-w-0 w-full ${reorderMode && isAdmin ? "rounded [&>*]:pointer-events-none" : ""} ${
+          reorderMode && isAdmin && draggingIndex === index ? "opacity-50" : ""
+        } ${showDropTarget ? "z-10 overflow-visible" : ""}`}
+      >
+        <Card
+          category={cat}
+          draft={categoryEdits[cat._id]}
+          imageUrl={cat.imageUrl}
+          isAdmin={isAdmin}
+          editMode={editMode}
+          reorderMode={reorderMode}
+          reorderDropTarget={showDropTarget}
+          onDraftChange={updateDraft}
+          onImageFile={handleCategoryImageFile}
+          onDelete={() => handleDeleteCategory(cat)}
+        />
+      </div>
+    );
+  };
+
   return (
     <>
-      <section className="home-categories-section relative mx-auto mb-16 w-full max-w-[1920px] px-[4vw] py-[4vw] md:px-[2.5vw] md:pb-[2.5vw] md:pt-5">
-        <div className="flex flex-col gap-[25px]">
-          {isAdmin && (
-            <div className="home-admin-toolbar flex w-full flex-wrap items-center justify-between gap-[25px] md:absolute md:right-[2.5vw] md:top-5 md:z-10 md:max-w-[calc(100%-2.5vw)] md:justify-end md:gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
-                  onClick={() => toggleEditMode()}
-                  title="Attiva o disattiva modifica sulle card"
-                >
-                  <span className="admin-action-icon">
-                    <Pencil size={22} weight="duotone" />
-                  </span>
-                  <span className="admin-action-label">modifica</span>
-                </button>
+      {isAdmin && (
+        <AdminSidebarPortal>
+          <button
+            type="button"
+            className={`btn-edit-gallery site-sidebar-admin-btn ${showForm ? "btn-edit-gallery-active" : ""}`}
+            onClick={openCreateForm}
+          >
+            <span className="admin-action-icon">
+              <Plus size={22} weight="duotone" />
+            </span>
+            <span className="admin-action-label">aggiungi categoria</span>
+          </button>
 
-                <button
-                  type="button"
-                  className={`btn-edit-gallery ${reorderMode ? "btn-edit-gallery-active" : ""}`}
-                  onClick={() => toggleReorderMode()}
-                  title="Trascina le card per riordinarle"
-                >
-                  <span className="admin-action-icon">
-                    <ArrowsClockwise size={22} />
-                  </span>
-                  <span className="admin-action-label">riordina</span>
-                </button>
-              </div>
+          <button
+            type="button"
+            className={`btn-edit-gallery site-sidebar-admin-btn ${reorderMode ? "btn-edit-gallery-active" : ""}`}
+            onClick={() => toggleReorderMode()}
+          >
+            <span className="admin-action-icon">
+              <ArrowsClockwise size={22} />
+            </span>
+            <span className="admin-action-label">riordina</span>
+          </button>
 
-              <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
-                <button
-                  type="button"
-                  className="btn-edit-gallery"
-                  onClick={openCreateForm}
-                  title="Aggiungi una nuova categoria"
-                >
-                  <span className="admin-action-icon">
-                    <Plus size={22} weight="duotone" />
-                  </span>
-                  <span className="admin-action-label">aggiungi categoria</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+          <button
+            type="button"
+            className={`btn-edit-gallery site-sidebar-admin-btn ${editMode ? "btn-edit-gallery-active" : ""}`}
+            onClick={() => toggleEditMode()}
+          >
+            <span className="admin-action-icon">
+              <Pencil size={22} weight="duotone" />
+            </span>
+            <span className="admin-action-label">elimina categoria</span>
+          </button>
 
-        <div className="home-categories-grid mt-[25px] grid grid-cols-1 items-start gap-x-[25px] gap-y-[25px] sm:grid-cols-2 md:mt-0 md:grid-cols-2 lg:grid-cols-2">
           {showForm && (
-            <div className="card flex h-full min-w-0 flex-col transition-opacity duration-200 ease-in-out">
-              <label className="flex aspect-[4/5] w-full shrink-0 cursor-pointer items-center justify-center overflow-hidden bg-[var(--color-beige-light)]">
-                {categoryImagePreview ? (
-                  <img
-                    src={categoryImagePreview}
-                    alt="Anteprima"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-gray-600 text-center text-sm px-2">Carica immagine</span>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (categoryImagePreview) URL.revokeObjectURL(categoryImagePreview);
-                    setCategoryImage(file);
-                    setCategoryImagePreview(URL.createObjectURL(file));
-                  }}
-                />
-              </label>
+            <>
+              <button
+                type="button"
+                className="btn-cancel-icon btn-annulla-action site-sidebar-admin-btn"
+                onClick={cancelCreateForm}
+                aria-label="Annulla"
+              >
+                <span className="admin-action-icon">
+                  <X size={18} weight="bold" aria-hidden />
+                </span>
+                <span className="admin-action-label">annulla</span>
+              </button>
 
-              <div className="card-heading-slot">
-                <input
-                  type="text"
-                  placeholder="Titolo"
-                  value={categoryTitle}
-                  onChange={(e) => setCategoryTitle(e.target.value)}
-                  className="card-title min-w-0 w-full shrink-0 break-words border-0 bg-transparent p-0 text-center outline-none [overflow-wrap:anywhere]"
-                />
-              </div>
+              <button
+                type="button"
+                className="btn-confirm-icon btn-salva-action site-sidebar-admin-btn"
+                onClick={() => createCategoryFromForm()}
+                disabled={!categoryTitle.trim() || !categoryImage}
+                aria-label="Salva categoria"
+              >
+                <span className="admin-action-icon">
+                  <Check size={22} weight="bold" aria-hidden />
+                </span>
+                <span className="admin-action-label">salva</span>
+              </button>
+            </>
+          )}
+        </AdminSidebarPortal>
+      )}
 
-              <div className="flex shrink-0 justify-center bg-white pb-0 pt-4">
-                <button
-                  type="button"
-                  className="btn-cancel-icon btn-annulla-action"
-                  onClick={() => {
-                    resetForm();
-                    setShowForm(false);
-                  }}
-                  title="Annulla"
-                  aria-label="Annulla"
-                >
-                  <span className="admin-action-icon">
-                    <X size={18} weight="bold" aria-hidden />
-                  </span>
-                  <span className="admin-action-label">annulla</span>
-                </button>
+      <section className="home-categories-section mx-auto mb-16 w-full max-w-[1920px] py-[4vw] md:pb-[2.5vw]">
+        {categoriesLoading ? (
+          <div className="h-64 animate-pulse bg-[var(--color-beige-light)]" />
+        ) : (
+          <>
+            <div className="gallery-masonry-row flex flex-col md:hidden">
+              <div className="gallery-masonry-col flex w-full flex-col">
+                {showForm && renderCreateCategoryForm()}
+                {categories.map((cat, index) => renderCategoryCell(cat, index))}
               </div>
             </div>
-          )}
 
-          {categoriesLoading ? (
-            <div className="col-span-full h-64 animate-pulse bg-[var(--color-beige-light)]" />
-          ) : (
-            categories.map((cat, index) => {
-              const showDropTarget =
-                reorderMode &&
-                isAdmin &&
-                draggingIndex !== null &&
-                dragOverIndex === index &&
-                draggingIndex !== index;
-              return (
-                <div
-                  key={cat._id}
-                  draggable={isAdmin && reorderMode}
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={(e) => handleDragOverCell(e, index)}
-                  onDrop={(e) => handleDrop(e, index)}
-                  className={`h-full min-w-0 ${reorderMode && isAdmin ? "rounded [&>*]:pointer-events-none" : ""} ${
-                    reorderMode && isAdmin && draggingIndex === index ? "opacity-50" : ""
-                  } ${showDropTarget ? "z-10 overflow-visible" : ""}`}
-                >
-                  <Card
-                    category={cat}
-                    draft={categoryEdits[cat._id]}
-                    imageUrl={cat.imageUrl}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                    reorderMode={reorderMode}
-                    reorderDropTarget={showDropTarget}
-                    onDraftChange={updateDraft}
-                    onImageFile={handleCategoryImageFile}
-                    onDelete={() => handleDeleteCategory(cat)}
-                  />
-                </div>
-              );
-            })
-          )}
-        </div>
+            <div className="gallery-masonry-row hidden flex-row items-start md:flex [&>*]:min-w-0">
+              <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
+                {showForm && renderCreateCategoryForm()}
+                {categories.map((cat, index) =>
+                  categoryMasonrySide(index) === "left" ? renderCategoryCell(cat, index) : null
+                )}
+              </div>
+              <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
+                {categories.map((cat, index) =>
+                  categoryMasonrySide(index) === "right" ? renderCategoryCell(cat, index) : null
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       {deleteCandidate && (
@@ -536,7 +572,7 @@ const Home = () => {
               id="delete-category-title"
               className="modal-title"
             >
-              eliminare categoria?
+              Eliminare categoria?
             </h2>
             <p className="mt-4 text-sm font-normal leading-relaxed text-black">
               Confermi di voler eliminare la categoria "{deleteCandidate.title}"? Questa azione non
@@ -545,7 +581,7 @@ const Home = () => {
             <div className="mt-6 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
-                className="btn-secondary btn-modal-action btn-annulla-outline"
+                className="btn-modal-action btn-salva-outline"
                 onClick={() => setDeleteCandidate(null)}
                 disabled={deletingCategory}
               >

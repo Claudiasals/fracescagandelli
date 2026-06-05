@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "remove-demo-categories": "node scripts/remove-demo-categories.js",
-    "seed-demo-categories": "node scripts/seed-demo-categories.js"
+    "seed-demo-categories": "node scripts/seed-demo-categories.js",
+    "seed-page-content": "node scripts/seed-page-content.js"
   },
   "keywords": [],
   "author": "",

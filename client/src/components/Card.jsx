@@ -33,7 +33,7 @@ const Card = ({
     return (
       <div
         className={`
-        card h-full min-w-0 cursor-default
+        card min-w-0 cursor-default
         transition-shadow duration-200 ease-in-out
         relative
         ${reorderMode ? "cursor-grab active:cursor-grabbing" : ""}
@@ -42,7 +42,7 @@ const Card = ({
       >
         <label
           className={`aspect-[4/5] w-full shrink-0 bg-[var(--color-beige-light)] flex items-center justify-center cursor-pointer relative ${
-            reorderDropTarget ? "overflow-hidden rounded-none" : "overflow-hidden rounded-sm"
+            reorderDropTarget ? "overflow-hidden rounded-none" : "overflow-hidden"
           }`}
         >
           {isAdmin && (
@@ -54,12 +54,12 @@ const Card = ({
                 e.stopPropagation();
                 onDelete?.();
               }}
-              title="Elimina categoria"
+              aria-label="Elimina"
             >
               <span className="admin-action-icon">
                 <Trash size={18} weight="duotone" />
               </span>
-              <span className="admin-action-label">elimina categoria</span>
+              <span className="admin-action-label">elimina</span>
             </button>
           )}
           {imgSrc ? (
@@ -105,7 +105,7 @@ const Card = ({
         setTimeout(() => navigate(category.link), 150);
       }}
       className={`
-        card h-full min-w-0 cursor-pointer
+        card min-w-0 cursor-pointer
         transition-shadow duration-200 ease-in-out
         relative
         ${pressed ? "opacity-70" : ""}

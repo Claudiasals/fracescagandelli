@@ -1,14 +1,14 @@
 import cloudinary from "../config/cloudinary.js";
 import About from "../models/aboutModel.js";
 
-/** Testo iniziale se il documento non esiste ancora (stesso contenuto della prima versione statica). */
-export const DEFAULT_ABOUT_TEXT = `Sono una fotografa Freelancer che vive nel mondo, ma più precisamente a Milano.
+import {
+  ABOUT_TEXT,
+} from "../content/siteCopy.js";
 
-Amo la natura e la naturalezza, attraverso i miei scatti racconto storie ed emozioni. Ti aiuto a mostrare la tua essenza e autenticità!
+export const DEFAULT_ABOUT_TEXT = ABOUT_TEXT;
 
-La mia profonda passione per la fotografia mi ha portato a perfezionarmi in autonomia e a frequentare numerosi corsi specializzati, affinando costantemente le mie competenze.
-
-Mi occupo di fotografia di famiglia, ritratti, storytelling e personal branding, trasformando ogni scatto in un ricordo speciale o in un racconto visivo.`;
+const normalizeAboutText = (text) =>
+  typeof text === "string" ? text.replace(/\s+/g, " ").trim() : text;
 
 export const getAboutController = async (req, res) => {
   try {
@@ -20,7 +20,7 @@ export const getAboutController = async (req, res) => {
       });
     }
     res.status(200).json({
-      text: doc.text?.trim() ? doc.text : DEFAULT_ABOUT_TEXT,
+      text: normalizeAboutText(doc.text?.trim() ? doc.text : DEFAULT_ABOUT_TEXT),
       images: doc.images || [],
     });
   } catch (error) {
@@ -38,9 +38,9 @@ export const updateAboutTextController = async (req, res) => {
 
     let doc = await About.findOne();
     if (!doc) {
-      doc = new About({ text, images: [] });
+      doc = new About({ text: normalizeAboutText(text), images: [] });
     } else {
-      doc.text = text;
+      doc.text = normalizeAboutText(text);
     }
     await doc.save();
     res.status(200).json({ message: "Testo aggiornato", text: doc.text });

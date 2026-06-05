@@ -108,8 +108,8 @@ const Settings = () => {
   if (!token()) return null;
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-[4vw] py-10 md:py-14">
-      <div className="mb-12 flex flex-wrap items-start justify-between gap-[25px]">
+    <section className="mx-auto flex w-full max-w-5xl flex-col px-[4vw] py-10 md:min-h-[calc(100dvh-5rem)] md:justify-center md:py-20">
+      <div className="mb-12 flex flex-wrap items-start justify-between gap-[25px] md:hidden">
         <div>
           <h1 className="page-title">Impostazioni</h1>
         </div>
@@ -162,7 +162,7 @@ const Settings = () => {
 
           <form onSubmit={handleSaveContact} className={`${panelClass} min-w-0 space-y-5 md:border-t-0 md:pt-0`}>
             <h2 className="text-[11px] font-normal uppercase tracking-[0.08em] text-black">
-              Contatti sul sito
+              Contatti
             </h2>
             <label className={labelClass}>
               <span>Email pubblica</span>

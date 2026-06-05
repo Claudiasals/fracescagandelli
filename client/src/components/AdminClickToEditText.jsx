@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import EditablePageText from "./EditablePageText.jsx";
+import PageProseContent from "./PageProseContent.jsx";
+import { normalizeInlineText, normalizePreLineText } from "../utils/pageProse.js";
 
 /**
  * Admin: clic sul paragrafo → modifica inline; salvataggio automatico al blur.
@@ -10,18 +12,30 @@ const AdminClickToEditText = ({
   className = "",
   onSave,
   ariaLabel,
-  as: Tag = "p",
+  singleParagraph = false,
+  preserveLineBreaks = false,
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(text);
   const [saving, setSaving] = useState(false);
 
+  const normalize = (value) => {
+    if (preserveLineBreaks) return normalizePreLineText(value);
+    if (singleParagraph) return normalizeInlineText(value);
+    return value;
+  };
+
+  const displayText = normalize(text);
+  const proseClassName = preserveLineBreaks
+    ? `${className} page-prose-text--pre-line`.trim()
+    : className;
+
   useEffect(() => {
-    if (!editing) setDraft(text);
-  }, [text, editing]);
+    if (!editing) setDraft(displayText);
+  }, [displayText, editing]);
 
   const startEditing = () => {
-    setDraft(text);
+    setDraft(displayText);
     setEditing(true);
   };
 
@@ -34,14 +48,14 @@ const AdminClickToEditText = ({
 
   const handleBlur = async () => {
     if (saving) return;
-    const trimmed = draft;
-    if (trimmed === text) {
+    const next = normalize(draft);
+    if (next === displayText) {
       setEditing(false);
       return;
     }
     setSaving(true);
     try {
-      const ok = await onSave(trimmed);
+      const ok = await onSave(next);
       if (ok !== false) setEditing(false);
     } finally {
       setSaving(false);
@@ -49,32 +63,51 @@ const AdminClickToEditText = ({
   };
 
   if (!isAdmin) {
-    return <Tag className={className}>{text}</Tag>;
-  }
-
-  if (editing) {
     return (
-      <EditablePageText
-        value={draft}
-        onChange={setDraft}
-        onBlur={handleBlur}
-        className={className}
-        aria-label={ariaLabel}
+      <PageProseContent
+        text={displayText}
+        className={proseClassName}
+        singleParagraph={singleParagraph}
+        preserveLineBreaks={preserveLineBreaks}
       />
     );
   }
 
+  if (editing) {
+    return (
+      <div className="page-prose-editor w-full min-w-0">
+        <EditablePageText
+          value={draft}
+          onChange={setDraft}
+          onBlur={handleBlur}
+          className={proseClassName}
+          aria-label={ariaLabel}
+        />
+        {!singleParagraph && !preserveLineBreaks && (
+          <p className="page-prose-editor-hint mt-2 text-black/45">
+            Invio due volte: nuovo paragrafo. Invio una volta: a capo nello stesso blocco.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <Tag
+    <div
       role="button"
       tabIndex={0}
-      className={`${className} cursor-text transition-opacity hover:opacity-65 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-verdolight)] focus-visible:ring-offset-2`}
+      className="page-prose-editor-trigger w-full min-w-0 cursor-text transition-opacity hover:opacity-65 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-verdolight)] focus-visible:ring-offset-2"
       onClick={startEditing}
       onKeyDown={handleKeyDown}
       title="Clicca per modificare"
     >
-      {text || "\u00a0"}
-    </Tag>
+      <PageProseContent
+        text={displayText}
+        className={proseClassName}
+        singleParagraph={singleParagraph}
+        preserveLineBreaks={preserveLineBreaks}
+      />
+    </div>
   );
 };
 

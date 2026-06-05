@@ -1,11 +1,21 @@
 import ContactPage from "../models/contactPageModel.js";
+import { CONTACT_FORM_LEAD, CONTACT_INTRO } from "../content/siteCopy.js";
 
-export const DEFAULT_CONTACT_INTRO = `Se desideri prenotare una sessione fotografica o
-discutere di un progetto, non esitare a contattarmi!
-Sarò felice di rispondere a tutte le tue domande e
-aiutarti a catturare i tuoi momenti speciali.`;
+export const DEFAULT_CONTACT_INTRO = CONTACT_INTRO;
+export const DEFAULT_CONTACT_FORM_LEAD = CONTACT_FORM_LEAD;
 
-export const DEFAULT_CONTACT_FORM_LEAD = "Compila il form, ti risponderò il prima possibile!";
+/** Mantiene gli a capo; su ogni riga collassa solo gli spazi multipli. */
+const normalizePreLineText = (text) =>
+  typeof text === "string"
+    ? text
+        .split("\n")
+        .map((line) => line.replace(/\s+/g, " ").trim())
+        .join("\n")
+        .trim()
+    : text;
+
+const normalizeInlineText = (text) =>
+  typeof text === "string" ? text.replace(/\s+/g, " ").trim() : text;
 
 export const getContactPageController = async (req, res) => {
   try {
@@ -17,10 +27,12 @@ export const getContactPageController = async (req, res) => {
       });
     }
     res.status(200).json({
-      introText:
-        doc.introText?.trim() ? doc.introText.trim() : DEFAULT_CONTACT_INTRO,
-      formLeadText:
-        doc.formLeadText?.trim() ? doc.formLeadText.trim() : DEFAULT_CONTACT_FORM_LEAD,
+      introText: normalizePreLineText(
+        doc.introText?.trim() ? doc.introText.trim() : DEFAULT_CONTACT_INTRO
+      ),
+      formLeadText: normalizeInlineText(
+        doc.formLeadText?.trim() ? doc.formLeadText.trim() : DEFAULT_CONTACT_FORM_LEAD
+      ),
     });
   } catch (error) {
     console.error("Errore get contact page:", error);
@@ -37,10 +49,13 @@ export const updateContactPageTextController = async (req, res) => {
 
     let doc = await ContactPage.findOne();
     if (!doc) {
-      doc = new ContactPage({ introText, formLeadText });
+      doc = new ContactPage({
+        introText: normalizePreLineText(introText),
+        formLeadText: normalizeInlineText(formLeadText),
+      });
     } else {
-      doc.introText = introText;
-      doc.formLeadText = formLeadText;
+      doc.introText = normalizePreLineText(introText);
+      doc.formLeadText = normalizeInlineText(formLeadText);
     }
     await doc.save();
     res.status(200).json({

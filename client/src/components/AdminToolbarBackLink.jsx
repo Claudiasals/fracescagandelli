@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 /**
  * Link testuale sotto annulla/salva nella toolbar admin (stesso stile delle gallerie).
  */
-const AdminToolbarBackLink = ({ to = "/", label = "torna alle categorie", title, onClick }) => (
+const AdminToolbarBackLink = ({ to = "/", label = "torna alle categorie", title, onClick, className = "" }) => (
   <Link
     to={to}
-    className="admin-toolbar-text-link"
+    className={`admin-toolbar-text-link${className ? ` ${className}` : ""}`}
     title={title ?? label}
     onClick={onClick}
   >
@@ -14,8 +14,10 @@ const AdminToolbarBackLink = ({ to = "/", label = "torna alle categorie", title,
   </Link>
 );
 
-export const AdminTextEditHint = () => (
-  <p className="admin-toolbar-hint">Clicca sul testo per modificarlo</p>
+export const AdminTextEditHint = ({ className = "" }) => (
+  <p className={`admin-toolbar-hint${className ? ` ${className}` : ""}`}>
+    Clicca sul testo per modificarlo
+  </p>
 );
 
 /** Hint a sinistra e link indietro a destra, stessa riga (Chi sono, Contatti). */
@@ -26,7 +28,7 @@ export const AdminToolbarHintRow = ({
   onBackClick,
 }) => (
   <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
-    <AdminTextEditHint />
+    <AdminTextEditHint className="md:hidden" />
     <AdminToolbarBackLink
       to={backTo}
       label={backLabel}

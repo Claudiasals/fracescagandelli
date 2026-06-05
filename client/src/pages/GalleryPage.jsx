@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import AdminToolbarBackLink from "../components/AdminToolbarBackLink.jsx";
+import AdminSidebarPortal from "../components/AdminSidebarPortal.jsx";
 import { Pencil, ArrowsClockwise, Plus, Trash, X } from "phosphor-react";
 import { lockBodyScroll, unlockBodyScroll } from "../utils/bodyScrollLock.js";
 import EditablePageText from "../components/EditablePageText.jsx";
@@ -9,25 +10,20 @@ import { API_BASE } from "../config/api.js";
 
 const API = `${API_BASE}/gallery`;
 
-const galleryIntroClass = "page-prose-text";
+const galleryIntroClass = "gallery-page-intro-text";
 
 /** Galleria a due colonne, solo immagini. */
 const GalleryPage = () => {
-  const location = useLocation();
   const params = useParams();
 
-  const slug = useMemo(() => {
-    if (params.slug) return params.slug;
-    const path = location.pathname.replace(/^\//, "");
-    return path.split("/")[0] || "";
-  }, [location.pathname, params.slug]);
+  const slug = useMemo(() => params.slug || "", [params.slug]);
 
   const isAdmin = !!localStorage.getItem("adminToken");
   const token = () => localStorage.getItem("adminToken");
 
   const [photos, setPhotos] = useState([]);
   const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [galleryReady, setGalleryReady] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
 
@@ -42,17 +38,20 @@ const GalleryPage = () => {
   /** Feedback durante il riordino: cella sotto il cursore e foto trascinata. */
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null);
+  const [reorderPickIndex, setReorderPickIndex] = useState(null);
 
   /** Anteprima a schermo intero (visitatori e admin fuori da modifica / riordino). */
   const [lightbox, setLightbox] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
 
-  const loadGallery = useCallback(async () => {
+  const loadGallery = useCallback(async (signal) => {
     if (!slug) return;
-    setLoading(true);
     try {
-      const res = await fetch(`${API}/${encodeURIComponent(slug)}`);
+      const res = await fetch(`${API}/${encodeURIComponent(slug)}`, { signal });
       const data = await res.json();
       if (Array.isArray(data.photos)) setPhotos(data.photos);
+      else setPhotos([]);
       if (typeof data.description === "string") {
         setDescription(data.description);
         lastSavedDescriptionRef.current = data.description;
@@ -61,11 +60,24 @@ const GalleryPage = () => {
         lastSavedDescriptionRef.current = "";
       }
     } catch (err) {
+      if (err.name === "AbortError") return;
       console.error("Errore caricamento galleria:", err);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setGalleryReady(true);
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (!slug) return undefined;
+
+    const controller = new AbortController();
+    setGalleryReady(false);
+    setPhotos([]);
+    setDescription("");
+    loadGallery(controller.signal);
+
+    return () => controller.abort();
+  }, [slug, loadGallery]);
 
   const saveDescription = useCallback(
     async (nextText) => {
@@ -99,10 +111,6 @@ const GalleryPage = () => {
   );
 
   useEffect(() => {
-    loadGallery();
-  }, [loadGallery]);
-
-  useEffect(() => {
     if (!editMode) return undefined;
 
     clearTimeout(descriptionSaveTimerRef.current);
@@ -118,6 +126,7 @@ const GalleryPage = () => {
     if (!reorderMode) {
       setDragOverIndex(null);
       setDraggingIndex(null);
+      setReorderPickIndex(null);
     }
   }, [reorderMode]);
 
@@ -222,6 +231,7 @@ const GalleryPage = () => {
   const handleDragStart = (e, index) => {
     dragIndexRef.current = index;
     setDraggingIndex(index);
+    setReorderPickIndex(index);
     setDragOverIndex(null);
     e.dataTransfer.setData("text/plain", String(index));
     e.dataTransfer.effectAllowed = "move";
@@ -254,14 +264,20 @@ const GalleryPage = () => {
     const next = [...photos];
     [next[from], next[dropIndex]] = [next[dropIndex], next[from]];
     setPhotos(next);
+    setReorderPickIndex(dropIndex);
     persistReorder(next);
   };
 
-  const handleDelete = async (photo) => {
-    if (!window.confirm("Rimuovere questa foto dalla galleria?")) return;
+  const requestDeletePhoto = (photo) => {
+    setDeleteCandidate(photo);
+  };
+
+  const confirmDeletePhoto = async () => {
+    if (!deleteCandidate) return;
 
     try {
-      const res = await fetch(`${API}/${encodeURIComponent(slug)}/${photo._id}`, {
+      setDeletingPhoto(true);
+      const res = await fetch(`${API}/${encodeURIComponent(slug)}/${deleteCandidate._id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token()}` },
       });
@@ -272,17 +288,22 @@ const GalleryPage = () => {
       const data = await res.json();
       if (!res.ok) return;
       if (Array.isArray(data.photos)) setPhotos(data.photos);
+      setDeleteCandidate(null);
     } catch (err) {
       console.error(err);
+    } finally {
+      setDeletingPhoto(false);
     }
   };
 
   const toggleReorderMode = () => {
     if (!reorderMode) {
       setEditMode(false);
+      setReorderPickIndex(photos.length > 0 ? 0 : null);
     } else {
       setDragOverIndex(null);
       setDraggingIndex(null);
+      setReorderPickIndex(null);
       dragIndexRef.current = null;
     }
     setReorderMode((r) => !r);
@@ -306,6 +327,16 @@ const GalleryPage = () => {
       dragOverIndex === index &&
       draggingIndex !== index;
 
+    const showReorderPick =
+      reorderMode &&
+      isAdmin &&
+      draggingIndex === null &&
+      reorderPickIndex === index;
+
+    const showReorderDragSource = reorderMode && isAdmin && draggingIndex === index;
+
+    const showReorderHighlight = showDropTarget || showReorderPick || showReorderDragSource;
+
     const canOpenLightbox = !editMode && !reorderMode;
 
     return (
@@ -316,11 +347,12 @@ const GalleryPage = () => {
         onDragEnd={handleDragEnd}
         onDragOver={(e) => handleDragOverCell(e, index)}
         onDrop={(e) => handleDrop(e, index)}
+        onClick={() => {
+          if (reorderMode && isAdmin) setReorderPickIndex(index);
+        }}
         className={`relative flex min-w-0 w-full flex-col select-none transition-shadow duration-150 ${
           reorderMode && isAdmin ? "cursor-grab active:cursor-grabbing [&>*]:pointer-events-none" : ""
-        } ${reorderMode && isAdmin && draggingIndex === index ? "opacity-50" : ""} ${
-          showDropTarget ? "z-10 overflow-visible" : ""
-        }`}
+        } ${showReorderHighlight ? "z-10 overflow-visible" : ""}`}
       >
         {isAdmin && editMode && (
           <button
@@ -328,21 +360,20 @@ const GalleryPage = () => {
             className="btn-cancel-icon btn-delete-photo absolute right-2 top-2 z-10"
             onClick={(e) => {
               e.stopPropagation();
-              handleDelete(photo);
+              requestDeletePhoto(photo);
             }}
-            title="Elimina la foto dalla galleria"
-            aria-label="Elimina foto"
+            aria-label="Elimina"
           >
             <span className="admin-action-icon">
               <Trash size={20} weight="duotone" />
             </span>
-            <span className="admin-action-label">elimina foto</span>
+            <span className="admin-action-label">elimina</span>
           </button>
         )}
 
         <div
           className={`w-full ${
-            showDropTarget ? "reorder-photo-glow overflow-hidden rounded-none" : "overflow-hidden"
+            showReorderHighlight ? "reorder-photo-glow overflow-hidden rounded-none" : "overflow-hidden"
           } ${canOpenLightbox ? "cursor-pointer focus-within:outline focus-within:outline-1 focus-within:outline-black" : ""}`}
           role={canOpenLightbox ? "button" : undefined}
           tabIndex={canOpenLightbox ? 0 : undefined}
@@ -365,7 +396,7 @@ const GalleryPage = () => {
             src={photo.imageUrl}
             alt="Foto galleria"
             className="pointer-events-none block h-auto w-full max-w-full align-top select-none"
-            loading="lazy"
+            loading="eager"
             decoding="async"
             draggable={false}
           />
@@ -376,14 +407,15 @@ const GalleryPage = () => {
 
   if (!slug) {
     return (
-      <section className="gallery-page mx-auto w-full max-w-[1920px] py-[4vw]">
+      <section className="gallery-page mx-auto w-full max-w-[1920px] py-[4vw] md:pb-[2.5vw]">
         <p className="text-[11px] lowercase tracking-[0.03em] text-black/60">Sezione non trovata.</p>
       </section>
     );
   }
 
   return (
-    <section className="gallery-page mx-auto w-full max-w-[1920px] py-[4vw]">
+    <>
+    <section className="gallery-page mx-auto w-full max-w-[1920px] py-[4vw] md:pb-[2.5vw]">
       {lightbox && (
         <div
           className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 p-4"
@@ -476,92 +508,125 @@ const GalleryPage = () => {
       )}
 
       {isAdmin && (
-        <div className="gallery-admin-toolbar mb-[25px] w-full min-w-0">
-          <div className="gallery-admin-toolbar__back flex justify-end">
-            <AdminToolbarBackLink backLabel="torna alle categorie" backTitle="Torna alle categorie" />
+        <AdminSidebarPortal
+          mobileClassName="admin-toolbar-mobile gallery-admin-toolbar-mobile mb-[25px] flex w-full flex-col items-end gap-2 md:hidden"
+          mobilePrefix={
+            <AdminToolbarBackLink label="torna alle categorie" title="Torna alle categorie" />
+          }
+        >
+          <AdminToolbarBackLink
+            label="torna alle categorie"
+            title="Torna alle categorie"
+            className="site-admin-sidebar-back hidden md:inline-block"
+          />
+          <button type="button" className="btn-edit-gallery site-sidebar-admin-btn shrink-0" onClick={openFilePicker}>
+            <span className="admin-action-icon">
+              <Plus size={24} weight="duotone" />
+            </span>
+            <span className="admin-action-label">aggiungi foto</span>
+          </button>
+
+          <button
+            type="button"
+            className={`btn-edit-gallery site-sidebar-admin-btn ${reorderMode ? "btn-edit-gallery-active" : ""}`}
+            onClick={toggleReorderMode}
+          >
+            <span className="admin-action-icon">
+              <ArrowsClockwise size={22} />
+            </span>
+            <span className="admin-action-label">riordina</span>
+          </button>
+
+          <button
+            type="button"
+            className={`btn-edit-gallery site-sidebar-admin-btn ${editMode ? "btn-edit-gallery-active" : ""}`}
+            onClick={() => toggleEditMode()}
+          >
+            <span className="admin-action-icon">
+              <Pencil size={22} weight="duotone" />
+            </span>
+            <span className="admin-action-label">elimina foto</span>
+          </button>
+        </AdminSidebarPortal>
+      )}
+
+      {!galleryReady ? null : photos.length === 0 ? (
+        <p className="py-12 text-center text-[11px] lowercase tracking-[0.03em] text-black/60">
+          {isAdmin ? "Nessuna foto ancora." : "Contenuto in arrivo."}
+        </p>
+      ) : (
+        <div className="gallery-masonry-row gallery-photos-ready flex flex-row items-start [&>*]:min-w-0">
+          <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
+            {photos
+              .map((photo, index) => ({ photo, index }))
+              .filter(({ index }) => index % 2 === 0)
+              .map(({ photo, index }) => renderPhotoCard(photo, index))}
           </div>
-          <div className="gallery-admin-toolbar__actions flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className={`btn-edit-gallery ${editMode ? "btn-edit-gallery-active" : ""}`}
-                onClick={() => toggleEditMode()}
-                title="Modifica"
-              >
-                <span className="admin-action-icon">
-                  <Pencil size={22} weight="duotone" />
-                </span>
-                <span className="admin-action-label">modifica</span>
-              </button>
-
-              <button
-                type="button"
-                className={`btn-edit-gallery ${reorderMode ? "btn-edit-gallery-active" : ""}`}
-                onClick={toggleReorderMode}
-                title="Trascina le foto per riordinarle"
-              >
-                <span className="admin-action-icon">
-                  <ArrowsClockwise size={22} />
-                </span>
-                <span className="admin-action-label">riordina</span>
-              </button>
-            </div>
-
-            <button type="button" className="btn-edit-gallery shrink-0" onClick={openFilePicker} title="Aggiungi foto">
-              <span className="admin-action-icon">
-                <Plus size={24} weight="duotone" />
-              </span>
-              <span className="admin-action-label">aggiungi foto</span>
-            </button>
+          <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
+            {photos
+              .map((photo, index) => ({ photo, index }))
+              .filter(({ index }) => index % 2 === 1)
+              .map(({ photo, index }) => renderPhotoCard(photo, index))}
           </div>
         </div>
       )}
 
-      {loading ? (
-        <div className="h-64 animate-pulse bg-[var(--color-beige-light)]" />
-      ) : (
-        <>
-          {photos.length === 0 ? (
-            <p className="py-12 text-center text-[11px] lowercase tracking-[0.03em] text-black/60">
-              {isAdmin ? "Nessuna foto ancora." : "Contenuto in arrivo."}
-            </p>
+      {galleryReady && (description.trim() || (isAdmin && editMode)) && (
+        <div className="gallery-page-intro mt-8 max-w-3xl">
+          {isAdmin && editMode ? (
+            <EditablePageText
+              value={description}
+              onChange={setDescription}
+              onBlur={() => saveDescription(description)}
+              autoFocus={false}
+              className={galleryIntroClass}
+              aria-label="Racconto fotografico della galleria"
+              placeholder="Racconto fotografico di questa galleria…"
+            />
           ) : (
-            <div className="gallery-masonry-row flex flex-row items-start [&>*]:min-w-0">
-              <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
-                {photos
-                  .map((photo, index) => ({ photo, index }))
-                  .filter(({ index }) => index % 2 === 0)
-                  .map(({ photo, index }) => renderPhotoCard(photo, index))}
-              </div>
-              <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
-                {photos
-                  .map((photo, index) => ({ photo, index }))
-                  .filter(({ index }) => index % 2 === 1)
-                  .map(({ photo, index }) => renderPhotoCard(photo, index))}
-              </div>
-            </div>
+            <p className={`${galleryIntroClass} m-0`}>{description.trim()}</p>
           )}
-
-          {(description.trim() || (isAdmin && editMode)) && (
-            <div className="gallery-page-intro mt-8 max-w-3xl">
-              {isAdmin && editMode ? (
-                <EditablePageText
-                  value={description}
-                  onChange={setDescription}
-                  onBlur={() => saveDescription(description)}
-                  autoFocus={false}
-                  className={galleryIntroClass}
-                  aria-label="Racconto fotografico della galleria"
-                  placeholder="Racconto fotografico di questa galleria…"
-                />
-              ) : (
-                <p className={galleryIntroClass}>{description.trim()}</p>
-              )}
-            </div>
-          )}
-        </>
+        </div>
       )}
     </section>
+
+    {deleteCandidate && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4 py-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-photo-title"
+      >
+        <div className="modal-panel w-full max-w-sm bg-white p-6 shadow-xl">
+          <h2 id="delete-photo-title" className="modal-title">
+            Eliminare foto?
+          </h2>
+          <p className="mt-4 text-sm font-normal leading-relaxed text-black">
+            Confermi di voler eliminare questa foto dalla galleria? Questa azione non puo' essere
+            annullata.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              className="btn-modal-action btn-salva-outline"
+              onClick={() => setDeleteCandidate(null)}
+              disabled={deletingPhoto}
+            >
+              annulla
+            </button>
+            <button
+              type="button"
+              className="btn-danger-action"
+              onClick={confirmDeletePhoto}
+              disabled={deletingPhoto}
+            >
+              elimina foto
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

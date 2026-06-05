@@ -1,8 +1,8 @@
 import SiteSettings from "../models/siteSettingsModel.js";
+import { INSTAGRAM_URL, PUBLIC_EMAIL } from "../content/siteCopy.js";
 
-export const DEFAULT_PUBLIC_EMAIL = "francescagandelli.ph@gmail.com";
-export const DEFAULT_INSTAGRAM_URL =
-  "https://www.instagram.com/francescagandelli_ph?igsh=bWZ6anl2bTdtcXc1";
+export const DEFAULT_PUBLIC_EMAIL = PUBLIC_EMAIL;
+export const DEFAULT_INSTAGRAM_URL = INSTAGRAM_URL;
 
 export const getSiteSettingsController = async (req, res) => {
   try {

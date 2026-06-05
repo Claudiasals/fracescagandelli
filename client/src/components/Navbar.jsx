@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { API_BASE } from "../config/api.js";
 import { lockBodyScroll, unlockBodyScroll } from "../utils/bodyScrollLock.js";
 import { menuLabel } from "../utils/menuLabel.js";
+import WebCredit from "./WebCredit.jsx";
 
 const MENU_ITEMS = [
     { to: "/settings", label: "impostazioni", adminOnly: true },
     { to: "/", label: "photography" },
     { to: "/about", label: "chi sono" },
     { to: "/contact", label: "contatti" },
+    { to: "/legal", label: "note legali" },
 ];
 
 function NavMainLinks({ variant, isAdmin, onNavigate }) {
@@ -18,7 +20,7 @@ function NavMainLinks({ variant, isAdmin, onNavigate }) {
         ? "mobile-menu-nav flex w-full flex-col items-end"
         : "site-desktop-menu-nav flex flex-col items-start";
     const itemClass = isMobile
-        ? "btn-navbar mobile-menu-item block w-max max-w-full py-2 pr-2 text-right"
+        ? "btn-navbar mobile-menu-item block w-max max-w-full pt-2 pb-0 pr-2 text-right"
         : "btn-navbar site-desktop-menu__item block w-max max-w-full py-1.5 text-left";
 
     const delay = (ms) => (isMobile ? { "--menu-item-delay": `${ms}ms` } : undefined);
@@ -55,8 +57,8 @@ function NavCategoryLinks({ variant, categories, isAdmin, onNavigate }) {
 
     const isMobile = variant === "mobile";
     const itemClass = isMobile
-        ? "btn-navbar mobile-menu-item block w-max max-w-full py-2 pr-2 text-right"
-        : "btn-navbar site-desktop-menu__item block w-max max-w-full py-1 text-left";
+        ? "btn-navbar mobile-menu-item block w-max max-w-full pt-2 pb-0 pr-2 text-right"
+        : "btn-navbar site-desktop-menu__item block w-max max-w-full py-1.5 text-left";
     const delay = (ms) => (isMobile ? { "--menu-item-delay": `${ms}ms` } : undefined);
     const handleItemClick = isMobile ? onNavigate : undefined;
     const mainItemCount = MENU_ITEMS.filter((item) => !item.adminOnly || isAdmin).length;
@@ -86,8 +88,8 @@ function NavCategoryLinks({ variant, categories, isAdmin, onNavigate }) {
     }
 
     return (
-        <nav className="site-desktop-categories-nav flex flex-col items-start" aria-label="Categorie portfolio">
-            <hr className="mobile-menu-separator site-desktop-menu-separator" aria-hidden />
+        <nav className="site-desktop-categories-nav flex w-full flex-col items-stretch" aria-label="Categorie portfolio">
+            <hr className="site-desktop-menu-separator" aria-hidden />
             {links}
         </nav>
     );
@@ -147,7 +149,6 @@ const Navbar = () => {
                                 type="button"
                                 className="btn-navbar btn-navbar-logout btn-navbar-logout-icon"
                                 onClick={handleLogout}
-                                title="Logout"
                                 aria-label="Logout"
                             >
                                 <span className="nav-logout-icon" aria-hidden>
@@ -186,32 +187,36 @@ const Navbar = () => {
             </header>
 
             {/* Desktop: sidebar larga quanto il titolo; le card restano affianco in alto */}
-            <aside className="site-layout-sidebar site-nav--sidebar relative z-50 hidden w-max max-w-[42vw] shrink-0 flex-col bg-white md:sticky md:top-0 md:flex md:max-h-[100dvh] md:self-start md:overflow-y-auto md:overscroll-contain md:px-4 md:py-5">
-                <div className="site-layout-sidebar-title flex w-full items-start justify-between gap-2">
+            <aside className="site-layout-sidebar site-nav--sidebar relative z-50 hidden w-max max-w-[42vw] shrink-0 flex-col bg-white md:sticky md:top-0 md:flex md:min-h-[100dvh] md:max-h-[100dvh] md:flex-col md:self-start md:overflow-y-auto md:overscroll-contain md:pl-4 md:pr-0 md:pb-5 md:pt-[var(--site-desktop-layout-pt)]">
+                <div className="site-layout-sidebar-title flex w-full items-start">
                     <Link
                         to="/"
                         className="site-brand-link flex min-w-0 cursor-pointer items-center"
                     >
                         <h1 className="site-brand-title whitespace-nowrap">FRANCESCA GANDELLI</h1>
                     </Link>
+                </div>
+
+                <div className="site-desktop-sidebar-main flex min-h-0 w-full min-w-0 flex-1 flex-row items-start">
+                    <div className="site-desktop-sidebar-menus flex min-w-0 flex-col items-start">
+                        <NavMainLinks variant="desktop" isAdmin={isAdmin} />
+                        <NavCategoryLinks variant="desktop" categories={categories} isAdmin={isAdmin} />
+                    </div>
+                    <div id="admin-sidebar-slot" className="site-admin-sidebar-slot" aria-live="polite" />
+                </div>
+
+                <div className="site-sidebar-footer mt-auto hidden w-full shrink-0 flex-col items-start pt-8 md:flex">
                     {isAdmin && (
                         <button
                             type="button"
-                            className="btn-navbar btn-navbar-logout btn-navbar-logout-icon mt-0.5 shrink-0"
+                            className="btn-edit-gallery site-sidebar-admin-btn site-sidebar-logout mb-4"
                             onClick={handleLogout}
-                            title="Logout"
                             aria-label="Logout"
                         >
-                            <span className="nav-logout-icon" aria-hidden>
-                                <SignOut size={24} weight="bold" />
-                            </span>
+                            logout
                         </button>
                     )}
-                </div>
-
-                <div className="site-desktop-sidebar flex w-full min-w-0 flex-col items-start">
-                    <NavMainLinks variant="desktop" isAdmin={isAdmin} />
-                    <NavCategoryLinks variant="desktop" categories={categories} isAdmin={isAdmin} />
+                    <WebCredit className="w-full text-left" />
                 </div>
             </aside>
 

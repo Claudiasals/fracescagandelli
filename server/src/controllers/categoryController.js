@@ -1,8 +1,6 @@
 import cloudinary from "../config/cloudinary.js";
 import Category from "../models/categoryModel.js";
 
-const STATIC_SLUGS = new Set(["family", "portrait", "storytelling", "personal-branding"]);
-
 function slugify(str) {
   return str
     .normalize("NFD")
@@ -14,9 +12,6 @@ function slugify(str) {
 }
 
 function linkForSlug(slug) {
-  if (STATIC_SLUGS.has(slug)) {
-    return `/${slug}`;
-  }
   return `/gallery/${slug}`;
 }
 
@@ -25,7 +20,7 @@ const SEED = [
     title: "Famiglia",
     description: "Momenti in famiglia",
     slug: "family",
-    link: "/family",
+    link: "/gallery/family",
     order: 0,
     imageUrl: "",
   },
@@ -33,15 +28,15 @@ const SEED = [
     title: "Ritratti",
     description: "Scatti professionali",
     slug: "portrait",
-    link: "/portrait",
+    link: "/gallery/portrait",
     order: 1,
     imageUrl: "",
   },
   {
     title: "Storytelling",
-    description: "Racconti fotografici",
+    description: "Dove l'artigiano incontra la natura",
     slug: "storytelling",
-    link: "/storytelling",
+    link: "/gallery/storytelling",
     order: 2,
     imageUrl: "",
   },
@@ -49,7 +44,7 @@ const SEED = [
     title: "Personal Branding",
     description: "Immagini per il tuo brand",
     slug: "personal-branding",
-    link: "/personal-branding",
+    link: "/gallery/personal-branding",
     order: 3,
     imageUrl: "",
   },
@@ -104,10 +99,22 @@ async function ensureDemoCategories() {
   }
 }
 
+async function ensureCanonicalLinks() {
+  const categories = await Category.find().select("slug link").lean();
+  await Promise.all(
+    categories
+      .filter((cat) => cat.link !== linkForSlug(cat.slug))
+      .map((cat) =>
+        Category.updateOne({ _id: cat._id }, { link: linkForSlug(cat.slug) })
+      )
+  );
+}
+
 export const getCategoriesController = async (req, res) => {
   try {
     await ensureSeed();
     await ensureDemoCategories();
+    await ensureCanonicalLinks();
     const categories = await Category.find().sort({ order: 1 }).lean();
     res.status(200).json({ categories });
   } catch (error) {

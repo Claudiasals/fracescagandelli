@@ -52,7 +52,7 @@ const EditablePageText = ({
       aria-label={ariaLabel}
       rows={1}
       spellCheck={false}
-      className={`editable-page-text-inner w-full max-w-full min-h-[1.35em] min-w-0 resize-none overflow-hidden border-0 bg-transparent p-0 outline-none whitespace-pre-wrap [overflow-wrap:anywhere] ${className}`}
+      className={`editable-page-text-inner w-full max-w-full min-h-[1.35em] min-w-0 resize-none overflow-hidden border-0 bg-transparent p-0 outline-none whitespace-pre-wrap break-words ${className}`}
     />
   );
 };

@@ -64,25 +64,25 @@ const Login = () => {
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-[4vw] py-10">
+        <div className="login-page flex w-full flex-col items-center px-[4vw] py-10 md:min-h-dvh md:justify-center md:py-0">
 
             <form className="flex w-full max-w-sm flex-col gap-6" onSubmit={handleLogin}>
 
                 <div className="relative gap-2 items-center">
                     <input
-                        className="peer w-full border-0 border-b border-black/35 bg-transparent py-2 pl-10 pr-0 text-sm outline-none transition-colors focus:border-black"
+                        className="peer w-full border-0 border-b border-black/35 bg-transparent py-2 pl-12 pr-0 text-sm outline-none transition-colors focus:border-black"
                         type="text"
                         placeholder="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
                     <User size={26}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 text-black/70 peer-focus:text-black" />
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70 peer-focus:text-black" />
                 </div>
 
                 <div className="relative gap-2 items-center">
                     <input
-                        className="peer w-full border-0 border-b border-black/35 bg-transparent py-2 pl-10 pr-10 text-sm outline-none transition-colors focus:border-black"
+                        className="peer w-full border-0 border-b border-black/35 bg-transparent py-2 pl-12 pr-12 text-sm outline-none transition-colors focus:border-black"
                         // Aggiunta gestione mostra/nascondi password
                         type={showPassword ? "text" : "password"}
                         placeholder="password"
@@ -90,17 +90,17 @@ const Login = () => {
                         onChange={(e) => setPassword(e.target.value)}
                     />
                     <Lock size={26}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 text-black/70 peer-focus:text-black" />
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-black/70 peer-focus:text-black" />
 
                     {showPassword ? (
                         <EyeClosed
                             size={22} weight="duotone"
-                            className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer text-black/70 peer-focus:text-black"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-black/70 peer-focus:text-black"
                             onClick={() => setShowPassword(false)}
                         />
                     ) : (
                         <Eye size={22} weight="duotone"
-                            className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer text-black/70 peer-focus:text-black"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-black/70 peer-focus:text-black"
                             onClick={() => setShowPassword(true)} /> // icona per mostrare
                     )}
                 </div>
@@ -118,9 +118,9 @@ const Login = () => {
                     )}
                     <button
                         type="submit"
-                        className="btn-primary"
+                        className="btn-contact-submit btn-login-submit"
                     >
-                        accedi
+                        Accedi
                     </button>
                 </div>
 

@@ -1,7 +1,7 @@
 /**
  * Imposta la copertina di una categoria da file locale.
- * Uso: cd server && node scripts/set-category-cover.js [slug-o-titolo]
- * Default: reale — immagine in client/public/demo-categories/reale.png
+ * Uso: cd server && node scripts/set-category-cover.js [slug-o-titolo] [percorso-immagine]
+ * Default immagine: client/public/demo-categories/reale.png
  */
 import "dotenv/config";
 import fs from "fs";
@@ -13,7 +13,9 @@ import Category from "../src/models/categoryModel.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const lookup = (process.argv[2] || "reale").trim();
-const imagePath = path.resolve(__dirname, "../../client/public/demo-categories/reale.png");
+const imagePath = process.argv[3]
+  ? path.resolve(process.cwd(), process.argv[3])
+  : path.resolve(__dirname, "../../client/public/demo-categories/reale.png");
 
 const uri = process.env.MONGO_URI;
 if (!uri) {
@@ -45,7 +47,7 @@ if (!cat) {
   process.exit(1);
 }
 
-let imageUrl = `/demo-categories/reale.png`;
+let imageUrl = `/demo-categories/${path.basename(imagePath)}`;
 
 if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
   const result = await cloudinary.uploader.upload(imagePath, {

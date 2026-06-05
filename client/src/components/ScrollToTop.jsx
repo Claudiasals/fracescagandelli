@@ -42,6 +42,20 @@ export default function ScrollToTop() {
   useLayoutEffect(() => {
     const skipLateScroll = pathname === "/contact" && hash === "#contact-form";
 
+    const scrollToHashTarget = () => {
+      if (!hash || hash.length <= 1) return false;
+      const el = document.getElementById(hash.slice(1));
+      if (!el) return false;
+      moveFocusToMainWithoutScroll();
+      el.scrollIntoView({ behavior: "auto", block: "start" });
+      return true;
+    };
+
+    if (scrollToHashTarget()) {
+      const retryId = window.setTimeout(scrollToHashTarget, 180);
+      return () => window.clearTimeout(retryId);
+    }
+
     moveFocusToMainWithoutScroll();
     scrollDocumentToTop();
 
