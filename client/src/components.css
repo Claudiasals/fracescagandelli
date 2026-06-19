@@ -394,6 +394,11 @@
   textarea:not(.editable-page-text-inner),
   select {
     background-color: var(--color-beige-light) !important;
+    padding-inline-start: var(--input-text-inset);
+  }
+
+  input.text-center {
+    padding-inline-start: 0;
   }
 
   input:not([type="file"]):not([type="hidden"]):not(.card-title):-webkit-autofill,
@@ -1005,6 +1010,9 @@
     min-height: 1.35em;
     cursor: text;
     caret-color: var(--color-black);
+    padding-inline-start: var(--input-text-inset);
+    padding-inline-end: 0;
+    padding-block: 0;
     font-family: var(--font-prose);
     font-weight: 400;
     letter-spacing: 0.03em;

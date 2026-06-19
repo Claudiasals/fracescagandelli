@@ -8,7 +8,7 @@ import { API_BASE } from "../config/api.js";
 const API = API_BASE;
 
 const inputClass =
-  "w-full rounded-none border-0 border-b border-black/35 bg-transparent px-0 py-2 text-sm outline-none transition-colors focus:border-black";
+  "w-full rounded-none border-0 border-b border-black/35 bg-transparent py-2 pe-0 ps-[var(--input-text-inset)] text-sm outline-none transition-colors focus:border-black";
 
 const labelClass = "flex flex-col gap-2 text-[11px] font-normal lowercase tracking-[0.03em] text-black";
 

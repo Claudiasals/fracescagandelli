@@ -532,18 +532,16 @@ const Home = () => {
       )}
 
       <section className="home-categories-section mx-auto mb-16 w-full max-w-[1920px] py-[4vw] md:pb-[2.5vw]">
-        {categoriesLoading ? (
-          <div className="h-64 animate-pulse bg-[var(--color-beige-light)]" />
-        ) : (
+        {!categoriesLoading ? (
           <>
-            <div className="gallery-masonry-row flex flex-col md:hidden">
+            <div className="gallery-masonry-row gallery-photos-ready flex flex-col md:hidden">
               <div className="gallery-masonry-col flex w-full flex-col">
                 {showForm && renderCreateCategoryForm()}
                 {categories.map((cat, index) => renderCategoryCell(cat, index))}
               </div>
             </div>
 
-            <div className="gallery-masonry-row hidden flex-row items-start md:flex [&>*]:min-w-0">
+            <div className="gallery-masonry-row gallery-photos-ready hidden flex-row items-start md:flex [&>*]:min-w-0">
               <div className="gallery-masonry-col flex min-w-0 flex-1 flex-col">
                 {showForm && renderCreateCategoryForm()}
                 {categories.map((cat, index) =>
@@ -557,7 +555,7 @@ const Home = () => {
               </div>
             </div>
           </>
-        )}
+        ) : null}
       </section>
 
       {deleteCandidate && (

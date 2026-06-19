@@ -9,7 +9,9 @@ Il progetto e diviso in due parti:
 
 ## Presentazione progetto
 
-Sito portfolio fotografico con **area admin integrata**: dalla home si gestiscono categorie e copertine; in ogni galleria si caricano, riordinano ed eliminano le foto; le pagine Chi sono, Contatti e note legali si modificano inline. Il backend salva testi e immagini su MongoDB e Cloudinary.
+Sito portfolio fotografico con **area admin integrata**: il fotografo gestisce categorie, gallerie, testi e impostazioni senza toccare il codice. Il backend salva dati su **MongoDB Atlas** e immagini su **Cloudinary**; frontend su Netlify, API su Render.
+
+**Identità visiva** — Palette (bianco, nero, grigi), tipografia (Bodoni Moda, Cormorant SC, TeX Gyre Heros), layout e impostazioni grafiche sono state scelte **unicamente dalla cliente**, che ha voluto il sito così com’è; lo sviluppo ha implementato quelle scelte senza modificarne lo stile.
 
 **Video demo del gestionale** (registrazione delle funzioni admin principali; **audio disponibile** — attiva l’audio dal player):
 
@@ -19,15 +21,51 @@ Se il player non compare: [scarica o apri il video](https://github.com/Claudiasa
 
 In locale puoi aprire anche [docs/PROGETTO.html](docs/PROGETTO.html) nel browser (stessa spiegazione e video a schermo intero).
 
+### Area admin — funzioni principali
+
+**Accesso** — Pagina `/login` con username e password; sessione protetta da token JWT.
+
+![Login admin](docs/readme/admin-login.png)
+
+**Recupero password** — Sotto **Accedi**, link *Password dimenticata*: apre un modale in tre passaggi. L’email deve coincidere con quella configurata sull’account admin (campo `email` in MongoDB, email pubblica in impostazioni o variabile `ADMIN_RESET_EMAIL`). **Invio** dalla tastiera equivale a **conferma**.
+
+1. **Email** — Inserisci l’indirizzo collegato all’account; alla conferma parte l’OTP via email (SMTP Gmail, variabili `EMAIL_USER` / `EMAIL_PASS`).
+
+![Recupero password — email](docs/readme/admin-forgot-password-email.png)
+
+2. **Codice OTP** — Inserisci il codice a 6 cifre ricevuto per email (validità 10 minuti, max 5 tentativi).
+
+![Recupero password — OTP](docs/readme/admin-forgot-password-otp.png)
+
+3. **Nuova password** — Scegli e conferma la nuova password; al salvataggio l’accesso avviene in automatico con JWT.
+
+![Recupero password — nuova password](docs/readme/admin-forgot-password-new.png)
+
+**Categorie in home** — Dalla sidebar: **aggiungi categoria** (nuova card con titolo e immagine), **riordina** (drag & drop), **elimina categoria** (modalità eliminazione sulle card). In creazione compaiono **annulla** e **salva** per confermare o abbandonare.
+
+![Gestione categorie](docs/readme/admin-categories.png)
+
+**Conferma eliminazione categoria** — Modale con titolo, messaggio di avviso e pulsanti **annulla** / **elimina categoria** (stesso stile anche per l’eliminazione foto in galleria).
+
+![Modale elimina categoria](docs/readme/admin-delete-category-modal.png)
+
+**Gallerie fotografiche** — In ogni categoria, dalla sidebar: **aggiungi foto**, **riordina** le immagini, **elimina foto** (pulsante rosso su ogni scatto in modalità eliminazione). Link **torna alle categorie** per tornare alla home admin.
+
+![Azioni galleria](docs/readme/admin-gallery-actions.png)
+
+**Testi modificabili** — Su Contatti, Chi sono e note legali compare l’indicazione *«clicca sul testo per modificarlo»*: basta cliccare un paragrafo per editarlo inline; il salvataggio avviene al blur. Stessa logica per intro contatti, recapiti visibili e testo sopra il form messaggi.
+
+![Modifica testi contatti](docs/readme/admin-contact-edit.png)
+
 ## Preview
 
-| Sito pubblico | Home admin |
+| Sito pubblico | Home admin (categorie) |
 | --- | --- |
-| ![Sito pubblico](docs/readme/public-home.png) | ![Home admin](docs/readme/admin-home.png) |
+| ![Sito pubblico](docs/readme/public-home.png) | ![Home admin](docs/readme/admin-categories.png) |
 
-| Galleria admin | Impostazioni admin |
+| Galleria | Impostazioni |
 | --- | --- |
-| ![Galleria admin](docs/readme/admin-gallery.png) | ![Impostazioni admin](docs/readme/admin-settings.png) |
+| ![Galleria admin](docs/readme/admin-gallery-actions.png) | ![Impostazioni admin](docs/readme/admin-settings.png) |
 
 ## Funzionalita
 
@@ -41,6 +79,7 @@ In locale puoi aprire anche [docs/PROGETTO.html](docs/PROGETTO.html) nel browser
 - Testi della pagina "Contatti" modificabili
 - Privacy Policy, Cookie Policy e Termini di Servizio modificabili dall'area admin
 - Login amministratore con token JWT
+- Recupero password via email con codice OTP e reimpostazione guidata
 - Gestione email e Instagram dal pannello impostazioni
 - Invio messaggi tramite form contatti
 - Immagini salvate su Cloudinary
@@ -148,6 +187,7 @@ CLOUDINARY_API_SECRET=api_secret
 EMAIL_USER=indirizzo_email_smtp
 EMAIL_PASS=password_per_app_smtp
 CONTACT_MAIL_TO=email_destinazione_opzionale
+ADMIN_RESET_EMAIL=email_recupero_password_opzionale
 ```
 
 Non committare mai file `.env`, password, secret, API key o connection string reali.
@@ -242,6 +282,7 @@ Dopo il login e possibile:
 - modificare didascalie
 - aggiornare testi delle pagine
 - cambiare email, Instagram e password admin
+- recuperare la password da `/login` se dimenticata (OTP via email)
 - aggiornare pagine legali
 
 ## Servizi esterni necessari

@@ -4,6 +4,7 @@ import { AdminToolbarHintRow, AdminTextEditHint } from "../components/AdminToolb
 import AdminClickToEditText from "../components/AdminClickToEditText.jsx";
 import aboutFallbackImage from "../assets/images/about-portrait.jpg";
 import { normalizeInlineText } from "../utils/pageProse.js";
+import { CLOUDINARY_WIDTH, optimizeCloudinaryUrl } from "../utils/cloudinaryImage.js";
 
 import { API_BASE } from "../config/api.js";
 
@@ -208,9 +209,11 @@ const About = () => {
             )}
 
             <img
-              src={displayedImage}
+              src={optimizeCloudinaryUrl(displayedImage, { width: CLOUDINARY_WIDTH.portrait })}
               alt="Francesca Gandelli"
               className="about-page-photo-img aspect-[4/5] w-full object-cover"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </div>

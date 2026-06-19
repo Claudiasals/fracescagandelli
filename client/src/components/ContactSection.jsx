@@ -11,7 +11,7 @@ const API = API_BASE;
 const contactTextClass = "contact-page-menu-text";
 
 const formFieldClass =
-  `${contactTextClass} mt-1 box-border w-full min-w-0 max-w-full rounded-none border-0 border-b border-black/35 bg-transparent py-1 pl-2 pr-0 leading-normal outline-none transition-colors focus:border-black placeholder:text-black/70`;
+  `${contactTextClass} mt-1 box-border w-full min-w-0 max-w-full rounded-none border-0 border-b border-black/35 bg-transparent py-1 pe-0 ps-[calc(0.5rem+var(--input-text-inset))] leading-normal outline-none transition-colors focus:border-black placeholder:text-black/70`;
 
 function instagramUsernameFromUrl(url) {
   if (!url || typeof url !== "string") return "";

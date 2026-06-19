@@ -4,6 +4,7 @@ import AdminToolbarBackLink from "../components/AdminToolbarBackLink.jsx";
 import AdminSidebarPortal from "../components/AdminSidebarPortal.jsx";
 import { Pencil, ArrowsClockwise, Plus, Trash, X } from "phosphor-react";
 import { lockBodyScroll, unlockBodyScroll } from "../utils/bodyScrollLock.js";
+import { CLOUDINARY_WIDTH, optimizeCloudinaryUrl } from "../utils/cloudinaryImage.js";
 import EditablePageText from "../components/EditablePageText.jsx";
 
 import { API_BASE } from "../config/api.js";
@@ -11,6 +12,9 @@ import { API_BASE } from "../config/api.js";
 const API = `${API_BASE}/gallery`;
 
 const galleryIntroClass = "gallery-page-intro-text";
+
+const EMPTY_GALLERY_PUBLIC_MESSAGE =
+  "Questa galleria è ancora in allestimento. Le fotografie di questa categoria saranno pubblicate a breve.";
 
 /** Galleria a due colonne, solo immagini. */
 const GalleryPage = () => {
@@ -393,10 +397,10 @@ const GalleryPage = () => {
           }
         >
           <img
-            src={photo.imageUrl}
+            src={optimizeCloudinaryUrl(photo.imageUrl, { width: CLOUDINARY_WIDTH.gallery })}
             alt="Foto galleria"
             className="pointer-events-none block h-auto w-full max-w-full align-top select-none"
-            loading="eager"
+            loading="lazy"
             decoding="async"
             draggable={false}
           />
@@ -441,9 +445,10 @@ const GalleryPage = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={lightbox.imageUrl}
+              src={optimizeCloudinaryUrl(lightbox.imageUrl, { width: CLOUDINARY_WIDTH.lightbox })}
               alt="Foto galleria"
               className="max-h-[85vh] max-w-full object-contain"
+              decoding="async"
             />
           </div>
         </div>
@@ -551,8 +556,8 @@ const GalleryPage = () => {
       )}
 
       {!galleryReady ? null : photos.length === 0 ? (
-        <p className="py-12 text-center text-[11px] lowercase tracking-[0.03em] text-black/60">
-          {isAdmin ? "Nessuna foto ancora." : "Contenuto in arrivo."}
+        <p className="py-12 text-center text-sm font-normal leading-relaxed tracking-[0.03em] text-black/60 lowercase max-w-md mx-auto px-4">
+          {isAdmin ? "Nessuna foto ancora." : EMPTY_GALLERY_PUBLIC_MESSAGE}
         </p>
       ) : (
         <div className="gallery-masonry-row gallery-photos-ready flex flex-row items-start [&>*]:min-w-0">

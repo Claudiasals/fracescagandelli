@@ -38,6 +38,7 @@ body::-webkit-scrollbar {
   --font-size-modal-title: 0.875rem;
   --font-size-contact-submit: 0.75rem;
   --font-size-nav-menu: 10px;
+  --input-text-inset: 0.375rem;
   --site-underline-offset: 0.1em;
   --site-nav-underline-offset: 0.4em;
 }
@@ -103,7 +104,7 @@ body {
   margin-top: auto;
 }
 
-button:not(.btn-contact-submit):not(.btn-login-submit):not(.btn-edit-gallery):not(.btn-cancel-icon):not(.btn-confirm-icon):not(.btn-danger-action):not(.btn-primary):not(.btn-modal-action):not(.btn-secondary),
+button:not(.btn-contact-submit):not(.btn-login-submit):not(.login-forgot-password):not(.btn-edit-gallery):not(.btn-cancel-icon):not(.btn-confirm-icon):not(.btn-danger-action):not(.btn-primary):not(.btn-modal-action):not(.btn-secondary),
 input:not(.card-title),
 textarea:not(.editable-page-text-inner),
 select {
@@ -123,7 +124,18 @@ button.btn-login-submit {
 
 button.btn-login-submit {
   font-size: var(--font-size-nav-menu);
-  text-transform: uppercase;
+  text-transform: none;
+}
+
+.login-forgot-password {
+  margin-top: 0.75rem;
+  color: var(--color-giallo-ocra);
+  text-decoration-color: color-mix(in srgb, var(--color-giallo-ocra) 55%, transparent);
+}
+
+.login-forgot-password:hover {
+  color: var(--color-black);
+  text-decoration-color: color-mix(in srgb, var(--color-black) 22%, transparent);
 }
 
 textarea.editable-page-text-inner:not(.gallery-page-intro-text):not(.about-page-bio-text):not(.contact-page-menu-text) {

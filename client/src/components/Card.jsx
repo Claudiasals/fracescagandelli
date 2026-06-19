@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Trash } from "phosphor-react";
 import { menuLabel } from "../utils/menuLabel.js";
+import { CLOUDINARY_WIDTH, optimizeCloudinaryUrl } from "../utils/cloudinaryImage.js";
 
 /**
  * @param {object} props
@@ -25,7 +26,11 @@ const Card = ({
   const [pressed, setPressed] = useState(false);
 
   const title = draft?.title ?? category.title;
-  const imgSrc = draft?.localPreview || imageUrl || category.imageUrl;
+  const rawImgSrc = draft?.localPreview || imageUrl || category.imageUrl;
+  const imgSrc = optimizeCloudinaryUrl(rawImgSrc, { width: CLOUDINARY_WIDTH.card });
+  const publicImgSrc = optimizeCloudinaryUrl(imageUrl || category.imageUrl, {
+    width: CLOUDINARY_WIDTH.card,
+  });
 
   const blockNavigation = reorderMode || editMode;
 
@@ -63,7 +68,14 @@ const Card = ({
             </button>
           )}
           {imgSrc ? (
-            <img src={imgSrc} alt={title} className="w-full h-full object-cover" draggable={false} />
+            <img
+              src={imgSrc}
+              alt={title}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+            />
           ) : (
             <span className="text-gray-600 text-sm px-2 text-center">{title || "Immagine"}</span>
           )}
@@ -120,9 +132,11 @@ const Card = ({
       >
         {imageUrl || category.imageUrl ? (
           <img
-            src={imageUrl || category.imageUrl}
+            src={publicImgSrc}
             alt={category.title}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
             draggable={false}
           />
         ) : (
